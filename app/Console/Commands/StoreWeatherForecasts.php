@@ -12,7 +12,7 @@ use Database\Seeders\BukidnonLocationsSeeder;
 
 class StoreWeatherForecasts extends Command
 {
-    protected $signature = 'weather:store-forecasts';
+    protected $signature = 'weather:store-forecasts {--refresh : Delete existing reports before storing fresh forecasts}';
     protected $description = 'Store 4-period weather forecasts for all locations';
 
     public function handle()
@@ -20,6 +20,12 @@ class StoreWeatherForecasts extends Command
         $this->info('Starting automatic weather forecast storage...');
 
         app(BukidnonLocationsSeeder::class)->run();
+
+        if ($this->option('refresh')) {
+            Snapshot::query()->delete();
+            WeatherReport::query()->delete();
+            $this->info('Existing weather reports deleted.');
+        }
         
         // Get all locations from database
         $locations = Location::all();
