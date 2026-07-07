@@ -5,11 +5,30 @@
 @section('content')
     <div class="w-full max-w-8xl mx-auto px-3 sm:px-4 lg:px-6">
 
-    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-3 sm:mb-4 space-y-2 lg:space-y-0">
-        <div class="flex-1 w-full">
-            <h1 class="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-800 mb-1">
-                Welcome, User
-            </h1>
+    <div class="relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 shadow-sm">
+        <div class="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+            <div class="flex-1 min-w-0">
+                <div class="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-1 text-[11px] sm:text-xs font-semibold mb-2">
+                    <i class="fas fa-cloud-sun"></i>
+                    <span>Live weather overview</span>
+                </div>
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                    Welcome, {{ auth()->user()->fname ?? 'User' }}
+                </h1>
+                <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    Current conditions, forecast changes, and safety alerts in one place.
+                </p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 w-full sm:w-auto">
+                <div class="rounded-lg bg-white dark:bg-gray-800 px-3 py-2 border border-gray-200 dark:border-gray-700">
+                    <div class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">Status</div>
+                    <div class="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100">Monitoring</div>
+                </div>
+                <div class="rounded-lg bg-white dark:bg-gray-800 px-3 py-2 border border-gray-200 dark:border-gray-700">
+                    <div class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">Alerts</div>
+                    <div id="alertHeroCount" class="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100">Checking</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -24,26 +43,111 @@
         <div id="alertsList" class="hidden space-y-2 sm:space-y-3">
             <!-- Alerts will be injected here -->
         </div>
+
+        <div id="allClearBanner" class="hidden rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/20 p-3 sm:p-4 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-lg bg-emerald-500 text-white flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-circle-check"></i>
+                </div>
+                <div class="min-w-0">
+                    <h3 class="text-sm sm:text-base font-bold text-emerald-900 dark:text-emerald-100">No active weather alerts</h3>
+                    <p class="text-xs sm:text-sm text-emerald-700 dark:text-emerald-300 truncate">Conditions look stable for your current area.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="weatherDashboard" class="w-full overflow-hidden">
     
-        <div id="loadingState" class="text-center py-8 sm:py-12">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-4 border-gray-300 dark:border-gray-600 border-t-blue-600 dark:border-t-blue-400 mb-2 sm:mb-3"></div>
-            <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm md:text-base">Loading weather data...</p>
+        <div id="loadingState" class="space-y-3 sm:space-y-4" aria-busy="true">
+            <div class="dashboard-card p-3 sm:p-4">
+                <div class="flex items-center gap-3">
+                    <div class="skeleton-circle h-10 w-10"></div>
+                    <div class="space-y-2 flex-1">
+                        <div class="skeleton-bar h-4 w-40"></div>
+                        <div class="skeleton-bar h-3 w-56 max-w-full"></div>
+                    </div>
+                    <div class="hidden sm:block skeleton-bar h-8 w-24"></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+                <div class="dashboard-card p-4 sm:p-5 md:p-6">
+                    <div class="flex items-center justify-between mb-5">
+                        <div class="space-y-2 flex-1">
+                            <div class="skeleton-bar h-4 w-44"></div>
+                            <div class="skeleton-bar h-3 w-32"></div>
+                        </div>
+                        <div class="skeleton-circle h-10 w-10"></div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="skeleton-circle h-16 w-16 sm:h-20 sm:w-20"></div>
+                        <div class="space-y-3 flex-1">
+                            <div class="skeleton-bar h-8 sm:h-10 w-28"></div>
+                            <div class="skeleton-bar h-3 w-36"></div>
+                            <div class="skeleton-bar h-3 w-28"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="dashboard-card p-4 sm:p-5 md:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="skeleton-bar h-5 w-36"></div>
+                        <div class="skeleton-circle h-9 w-9"></div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="skeleton-block h-24"></div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="skeleton-block h-20"></div>
+                            <div class="skeleton-block h-20"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="dashboard-card p-3 sm:p-4 md:p-5">
+                <div class="skeleton-bar h-5 w-44 mb-4"></div>
+                <div class="flex gap-2 sm:gap-3 overflow-hidden">
+                    @for($i = 0; $i < 8; $i++)
+                        <div class="skeleton-block h-28 w-20 sm:w-24 md:w-28 flex-shrink-0"></div>
+                    @endfor
+                </div>
+            </div>
+            <div class="dashboard-card p-3 sm:p-4 md:p-5">
+                <div class="skeleton-bar h-5 w-36 mb-4"></div>
+                <div class="space-y-2 sm:space-y-3">
+                    @for($i = 0; $i < 5; $i++)
+                        <div class="flex items-center gap-3 rounded-lg">
+                            <div class="skeleton-bar h-4 w-14"></div>
+                            <div class="skeleton-circle h-9 w-9"></div>
+                            <div class="space-y-2 flex-1">
+                                <div class="skeleton-bar h-4 w-36 max-w-full"></div>
+                                <div class="skeleton-bar h-3 w-20"></div>
+                            </div>
+                            <div class="skeleton-bar h-6 w-14"></div>
+                        </div>
+                    @endfor
+                </div>
+            </div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                @for($i = 0; $i < 4; $i++)
+                    <div class="dashboard-card p-3 sm:p-4">
+                        <div class="skeleton-bar h-3 w-20 mb-4"></div>
+                        <div class="skeleton-bar h-6 w-24 mb-2"></div>
+                        <div class="skeleton-bar h-3 w-28"></div>
+                    </div>
+                @endfor
+            </div>
         </div>
 
         <div id="weatherContent" class="hidden space-y-2 sm:space-y-3 md:space-y-4 w-full">
         
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-2 sm:gap-3 md:gap-4">
              
-                <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 w-full overflow-hidden">
+                <div class="dashboard-panel p-4 sm:p-5 md:p-6 w-full overflow-hidden">
              
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 pb-2 sm:pb-3 border-b border-gray-200 dark:border-gray-600 gap-2">
                         <div class="w-full sm:w-auto min-w-0 flex-1">
                             <div class="flex items-center text-gray-700 dark:text-gray-300 text-xs sm:text-sm mb-1">
                                 <i class="fas fa-map-marker-alt mr-1 sm:mr-1.5 text-blue-500 dark:text-blue-400 text-xs flex-shrink-0"></i>
-                                <span id="location" class="font-medium truncate">Loading location...</span>
+                                <span id="location" class="font-bold text-gray-900 dark:text-white truncate">Loading location...</span>
                             </div>
                             <div class="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs">
                                 <span id="currentDay" class="font-medium"></span>
@@ -78,14 +182,14 @@
                 </div>
 
               
-                <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 w-full overflow-hidden">
+                <div class="dashboard-panel p-4 sm:p-5 md:p-6 w-full overflow-hidden">
                     <div class="flex items-center justify-between mb-3 sm:mb-4">
-                        <h3 class="text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-white">Precipitation</h3>
+                        <h3 class="section-title text-gray-900 dark:text-white">Precipitation</h3>
                         <i class="fas fa-cloud-rain text-blue-500 dark:text-blue-400 text-sm sm:text-base md:text-lg"></i>
                     </div>
 
                     <div class="space-y-2 sm:space-y-3">
-                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2.5 sm:p-3 md:p-4">
+                        <div class="metric-card p-3 md:p-4">
                             <div class="flex items-center justify-between mb-1.5 sm:mb-2">
                                 <span class="text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-medium">Rain Chance</span>
                                 <i class="fas fa-tint text-blue-500 dark:text-blue-400 text-xs sm:text-sm"></i>
@@ -96,7 +200,7 @@
                         </div>
 
                         <div class="grid grid-cols-2 gap-2 sm:gap-3">
-                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 sm:p-2.5 md:p-3">
+                            <div class="metric-card p-2.5 md:p-3">
                                 <div class="flex items-center justify-between mb-1 sm:mb-1.5">
                                     <span class="text-gray-700 dark:text-gray-300 text-[10px] sm:text-xs">Rainfall</span>
                                     <i class="fas fa-cloud-rain text-blue-500 dark:text-blue-400 text-[10px] sm:text-xs"></i>
@@ -106,7 +210,7 @@
                                 </div>
                             </div>
 
-                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 sm:p-2.5 md:p-3">
+                            <div class="metric-card p-2.5 md:p-3">
                                 <div class="flex items-center justify-between mb-1 sm:mb-1.5">
                                     <span class="text-gray-700 dark:text-gray-300 text-[10px] sm:text-xs">Humidity</span>
                                     <i class="fas fa-water text-blue-500 dark:text-blue-400 text-[10px] sm:text-xs"></i>
@@ -121,9 +225,9 @@
             </div>
 
 
-          <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl md:rounded-2xl p-2.5 sm:p-4 md:p-5 border border-gray-200 dark:border-gray-700 shadow-lg w-full">
+          <div class="dashboard-panel p-3 sm:p-4 md:p-5 w-full">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 sm:mb-3 md:mb-4">
-                    <h3 class="text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-1 sm:mb-0">Today's Hourly Forecast</h3>
+                    <h3 class="section-title text-gray-900 dark:text-white mb-1 sm:mb-0">Today's Hourly Forecast</h3>
                     <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center space-x-1 sm:hidden">
                         <i class="fas fa-hand-pointer text-blue-500"></i>
                         <span>Swipe to see more</span>
@@ -137,9 +241,9 @@
                 </div>
             </div>
         
-            <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl md:rounded-2xl p-2.5 sm:p-4 md:p-5 border border-gray-200 dark:border-gray-700 shadow-lg w-full overflow-hidden">
+            <div class="dashboard-panel p-3 sm:p-4 md:p-5 w-full overflow-hidden">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 sm:mb-3 md:mb-4">
-                    <h3 class="text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-1 sm:mb-0">5-Day Forecast</h3>
+                    <h3 class="section-title text-gray-900 dark:text-white mb-1 sm:mb-0">5-Day Forecast</h3>
                 </div>
 
                 <div id="dailyForecast" class="space-y-1.5 sm:space-y-2 md:space-y-3"></div>
@@ -148,9 +252,9 @@
        
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2 md:gap-3">
              
-                <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 w-full overflow-hidden">
+                <div class="dashboard-panel stat-card p-3 md:p-4 w-full overflow-hidden">
                     <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-                        <span class="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs font-medium truncate">Wind Status</span>
+                        <span class="stat-title text-gray-800 dark:text-gray-200 truncate">Wind Status</span>
                         <i class="fas fa-wind text-green-500 dark:text-green-400 text-xs sm:text-sm flex-shrink-0"></i>
                     </div>
                     <div class="text-base sm:text-lg md:text-2xl font-bold text-gray-900 dark:text-white mb-0.5 sm:mb-1">
@@ -162,9 +266,9 @@
                 </div>
 
             
-                <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 w-full overflow-hidden">
+                <div class="dashboard-panel stat-card p-3 md:p-4 w-full overflow-hidden">
                     <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-                        <span class="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs font-medium">UV Index</span>
+                        <span class="stat-title text-gray-800 dark:text-gray-200">UV Index</span>
                         <i class="fas fa-sun text-yellow-500 dark:text-yellow-400 text-xs sm:text-sm flex-shrink-0"></i>
                     </div>
                     <div class="text-base sm:text-lg md:text-2xl font-bold text-gray-900 dark:text-white mb-0.5 sm:mb-1">
@@ -173,9 +277,9 @@
                     <div class="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs" id="uvStatus">Moderate</div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 w-full overflow-hidden">
+                <div class="dashboard-panel stat-card p-3 md:p-4 w-full overflow-hidden">
                     <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-                        <span class="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs font-medium">Visibility</span>
+                        <span class="stat-title text-gray-800 dark:text-gray-200">Visibility</span>
                         <i class="fas fa-eye text-purple-500 dark:text-purple-400 text-xs sm:text-sm flex-shrink-0"></i>
                     </div>
                     <div class="text-base sm:text-lg md:text-2xl font-bold text-gray-900 dark:text-white mb-0.5 sm:mb-1">
@@ -185,9 +289,9 @@
                 </div>
 
         
-                <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 w-full overflow-hidden">
+                <div class="dashboard-panel stat-card p-3 md:p-4 w-full overflow-hidden">
                     <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-                        <span class="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs font-medium">Pressure</span>
+                        <span class="stat-title text-gray-800 dark:text-gray-200">Pressure</span>
                         <i class="fas fa-tachometer-alt text-red-500 dark:text-red-400 text-xs sm:text-sm flex-shrink-0"></i>
                     </div>
                     <div class="text-base sm:text-lg md:text-2xl font-bold text-gray-900 dark:text-white mb-0.5 sm:mb-1">
@@ -231,7 +335,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const weatherContent = document.getElementById("weatherContent");
     const errorState = document.getElementById("errorState");
 
-    const OPENWEATHER_API_KEY = "{{ env('OPENWEATHER_API_KEY') }}";
+    const OPENWEATHER_API_KEY = @json(config('services.openweather.key', ''));
     const OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5";
     const OPENMETEO_BASE_URL = "https://api.open-meteo.com/v1";
 
@@ -330,7 +434,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 `&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,surface_pressure` +
                 `&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,uv_index` +
                 `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max` +
-                `&timezone=auto&forecast_days=2`;
+                `&timezone=auto&forecast_days=5`;
 
             const response = await fetch(forecastUrl);
             const data = await response.json();
@@ -434,7 +538,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const isNight = time.getHours() < 6 || time.getHours() > 18;
 
             hourlyHTML.push(`
-                <div class="bg-gray-50/80 dark:bg-gray-700/50 rounded-lg sm:rounded-xl md:rounded-2xl p-2 sm:p-3 md:p-4 text-center flex-shrink-0 w-20 sm:w-24 md:w-28 hover:bg-gray-100/80 dark:hover:bg-gray-600/50 transition-all duration-300 cursor-pointer">
+                <div class="forecast-chip p-2 sm:p-3 md:p-4 text-center flex-shrink-0 w-20 sm:w-24 md:w-28 cursor-pointer">
                     <div class="text-gray-600 dark:text-gray-400 text-[10px] sm:text-xs md:text-sm mb-1 sm:mb-2">${i === 0 ? "Now" : time.getHours().toString().padStart(2, "0") + ":00"}</div>
                     <div class="text-xl sm:text-2xl md:text-3xl mb-1 sm:mb-2">
                         <i class="${getWeatherIcon(iconCode, isNight)}"></i>
@@ -463,7 +567,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const pop = dailyData.precipitation_probability_max[i] || 0;
 
             dailyHTML.push(`
-                <div class="flex items-center justify-between p-2 sm:p-3 md:p-4 bg-gray-50/80 dark:bg-gray-700/50 rounded-lg sm:rounded-xl md:rounded-2xl hover:bg-gray-100/80 dark:hover:bg-gray-600/50 transition-all duration-300 cursor-pointer">
+                <div class="forecast-row flex items-center justify-between p-3 md:p-4 cursor-pointer">
                     <div class="flex items-center space-x-2 sm:space-x-3 md:space-x-4 flex-1 min-w-0">
                         <div class="w-12 sm:w-14 md:w-16 text-gray-900 dark:text-white font-medium text-xs sm:text-sm md:text-base flex-shrink-0">${dayName}</div>
                         <div class="text-xl sm:text-2xl md:text-3xl flex-shrink-0">
@@ -519,7 +623,7 @@ function loadOpenMeteoAlerts(data, location) {
     console.log('🔄 Loading weather alerts...');
     
     if (!data || !location || !currentWeatherData) {
-        console.warn('⚠️ Missing data for alert analysis');
+        console.warn('Missing data for alert analysis');
         return;
     }
     
@@ -532,6 +636,7 @@ function loadOpenMeteoAlerts(data, location) {
             displayAlertSummary(alerts);
             displayDetailedAlerts(alerts);
         } else {
+            displayAllClearState();
             console.log('ℹ️ No alerts - weather conditions normal');
         }
     } catch (error) {
@@ -579,7 +684,7 @@ function analyzeOpenMeteoForAlerts(data, location, currentWeather) {
             alertID: Date.now() + Math.random(),
             alert_type: temp >= 40 ? 'extreme_heat' : 'heat',
             severity: temp >= 40 ? 'extreme' : 'high',
-            title: temp >= 40 ? '🔥 Extreme Heat Warning' : '☀️ High Temperature Alert',
+            title: temp >= 40 ? 'Extreme Heat Warning' : 'High Temperature Alert',
             description: `Current temperature is ${temp}°C. ${temp >= 40 ? 'Extreme heat poses serious health risks.' : 'High temperatures may cause discomfort and health issues.'}`,
             warning: {
                 title: temp >= 40 ? 'IMMEDIATE HEALTH DANGER' : 'HEAT HEALTH ADVISORY',
@@ -587,8 +692,8 @@ function analyzeOpenMeteoForAlerts(data, location, currentWeather) {
                     ? 'Life-threatening heat conditions exist. Heat stroke and heat exhaustion are imminent risks.'
                     : 'High temperatures increase risk of heat-related illness.',
                 impact: [
-                    temp >= 40 ? '🚨 Heat stroke risk - EXTREME' : '⚠️ Heat exhaustion risk - HIGH',
-                    temp >= 40 ? '🚨 Infrastructure stress' : '⚠️ Increased energy demand'
+                    temp >= 40 ? 'Heat stroke risk - EXTREME' : 'Heat exhaustion risk - HIGH',
+                    temp >= 40 ? 'Infrastructure stress' : 'Increased energy demand'
                 ],
                 timing: 'Peak danger: 10 AM - 4 PM',
                 affected_areas: 'All outdoor areas'
@@ -614,12 +719,12 @@ function analyzeOpenMeteoForAlerts(data, location, currentWeather) {
             alertID: Date.now() + Math.random(),
             alert_type: 'storm',
             severity: 'extreme',
-            title: '⛈️ Thunderstorm Warning',
+            title: 'Thunderstorm Warning',
             description: 'Thunderstorm activity detected in your area.',
             warning: {
                 title: 'SEVERE THUNDERSTORM WARNING',
                 content: 'Dangerous thunderstorm with lightning, heavy rain possible.',
-                impact: ['🚨 Lightning strikes', '🚨 Flash flooding possible'],
+                impact: ['Lightning strikes', 'Flash flooding possible'],
                 timing: 'Next 6-12 hours',
                 affected_areas: 'Entire area'
             },
@@ -643,12 +748,12 @@ function analyzeOpenMeteoForAlerts(data, location, currentWeather) {
             alertID: Date.now() + Math.random(),
             alert_type: 'heavy_rain',
             severity: maxRainNext24h > 20 ? 'extreme' : 'high',
-            title: '🌧️ Heavy Rain Alert',
+            title: 'Heavy Rain Alert',
             description: `Heavy rainfall expected: ${maxRainNext24h.toFixed(1)}mm peak.`,
             warning: {
                 title: 'HEAVY RAINFALL ADVISORY',
                 content: 'Heavy rain will create hazardous conditions.',
-                impact: ['⚠️ Localized flooding', '⚠️ Road flooding'],
+                impact: ['Localized flooding', 'Road flooding'],
                 timing: `${heavyRainPeriods} hours`,
                 affected_areas: 'Low-lying areas'
             },
@@ -672,12 +777,12 @@ function analyzeOpenMeteoForAlerts(data, location, currentWeather) {
             alertID: Date.now() + Math.random(),
             alert_type: 'strong_wind',
             severity: maxWindNext24h >= 70 ? 'extreme' : 'high',
-            title: '💨 Strong Wind Alert',
+            title: 'Strong Wind Alert',
             description: `Strong winds expected: ${maxWindNext24h.toFixed(1)} km/h.`,
             warning: {
                 title: 'STRONG WIND ADVISORY',
                 content: 'Strong winds will create hazardous conditions.',
-                impact: ['⚠️ Tree branches breaking', '⚠️ Power outages'],
+                impact: ['Tree branches breaking', 'Power outages'],
                 timing: `${strongWindPeriods}+ hours`,
                 affected_areas: 'All areas'
             },
@@ -703,31 +808,43 @@ function getSeverityConfig(severity) {
         'extreme': {
             borderClass: 'border-red-600',
             badgeClass: 'bg-red-600 text-white',
-            bgClass: 'bg-red-50 dark:bg-red-900/20'
+            bgClass: 'bg-red-50 dark:bg-red-900/20',
+            iconClass: 'bg-red-600 text-white',
+            ringClass: 'ring-red-100 dark:ring-red-900/40',
+            dotClass: 'bg-red-500',
+            summaryClass: 'from-red-600 to-rose-700'
         },
         'high': {
             borderClass: 'border-orange-600',
             badgeClass: 'bg-orange-600 text-white',
-            bgClass: 'bg-orange-50 dark:bg-orange-900/20'
+            bgClass: 'bg-orange-50 dark:bg-orange-900/20',
+            iconClass: 'bg-orange-500 text-white',
+            ringClass: 'ring-orange-100 dark:ring-orange-900/40',
+            dotClass: 'bg-orange-500',
+            summaryClass: 'from-orange-500 to-amber-600'
         },
         'moderate': {
             borderClass: 'border-yellow-600',
             badgeClass: 'bg-yellow-600 text-white',
-            bgClass: 'bg-yellow-50 dark:bg-yellow-900/20'
+            bgClass: 'bg-yellow-50 dark:bg-yellow-900/20',
+            iconClass: 'bg-yellow-500 text-white',
+            ringClass: 'ring-yellow-100 dark:ring-yellow-900/40',
+            dotClass: 'bg-yellow-500',
+            summaryClass: 'from-yellow-500 to-amber-500'
         }
     };
     return configs[severity] || configs['moderate'];
 }
 
 function getAlertTypeIcon(type) {
-    const icons = {
-        'extreme_heat': '🔥',
-        'heat': '☀️',
-        'heavy_rain': '🌧️',
-        'strong_wind': '💨',
-        'storm': '⛈️'
+    const iconClasses = {
+        'extreme_heat': 'fas fa-temperature-full',
+        'heat': 'fas fa-sun',
+        'heavy_rain': 'fas fa-cloud-showers-heavy',
+        'strong_wind': 'fas fa-wind',
+        'storm': 'fas fa-cloud-bolt'
     };
-    return icons[type] || '⚠️';
+    return iconClasses[type] || 'fas fa-triangle-exclamation';
 }
 
 function toggleAlertsPanel() {
@@ -735,43 +852,64 @@ function toggleAlertsPanel() {
     alertsList.classList.toggle('hidden');
 }
 
+function cleanAlertText(value) {
+    return String(value || '').replace(/[^\x20-\x7E]+/g, '').replace(/^[^A-Za-z0-9]+/, '').trim();
+}
+
+function displayAllClearState() {
+    document.getElementById('alertSummaryBanner')?.classList.add('hidden');
+    document.getElementById('alertsList')?.classList.add('hidden');
+    document.getElementById('allClearBanner')?.classList.remove('hidden');
+    const alertHeroCount = document.getElementById('alertHeroCount');
+    if (alertHeroCount) {
+        alertHeroCount.textContent = 'All clear';
+    }
+}
+
 function displayAlertSummary(alerts) {
     const banner = document.getElementById('alertSummaryBanner');
+    const allClearBanner = document.getElementById('allClearBanner');
+    const alertHeroCount = document.getElementById('alertHeroCount');
     const totalAlerts = alerts.length;
     
     if (totalAlerts === 0) {
-        banner.classList.add('hidden');
+        displayAllClearState();
         return;
     }
 
     const extremeCount = alerts.filter(a => a.severity === 'extreme').length;
     const highCount = alerts.filter(a => a.severity === 'high').length;
+    const topSeverity = extremeCount > 0 ? 'extreme' : highCount > 0 ? 'high' : 'moderate';
+    const severityConfig = getSeverityConfig(topSeverity);
 
-    const severityClass = extremeCount > 0 ? 'bg-red-600' :
-                        highCount > 0 ? 'bg-orange-600' :
-                        'bg-amber-600';
+    if (alertHeroCount) {
+        alertHeroCount.textContent = `${totalAlerts} active`;
+    }
 
     banner.innerHTML = `
-        <div class="${severityClass} text-white p-3 sm:p-4 rounded-lg sm:rounded-xl shadow-lg">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-                <div class="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto">
-                    <div class="text-2xl sm:text-3xl animate-pulse flex-shrink-0">⚠️</div>
+        <div class="bg-gradient-to-r ${severityConfig.summaryClass} text-white p-3 sm:p-4 rounded-xl shadow-lg alert-glow">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex items-center space-x-3 w-full sm:w-auto">
+                    <div class="h-11 w-11 rounded-lg bg-white/20 flex items-center justify-center animate-soft-pulse flex-shrink-0">
+                        <i class="fas fa-triangle-exclamation text-lg"></i>
+                    </div>
                     <div class="flex-1 min-w-0">
                         <h3 class="text-base sm:text-lg font-bold truncate">Active Weather Alerts</h3>
                         <p class="text-xs sm:text-sm opacity-90">
                             ${totalAlerts} alert${totalAlerts > 1 ? 's' : ''}
-                            ${extremeCount > 0 ? ` • ${extremeCount} Extreme` : ''}
-                            ${highCount > 0 ? ` • ${highCount} High` : ''}
+                            ${extremeCount > 0 ? ` - ${extremeCount} Extreme` : ''}
+                            ${highCount > 0 ? ` - ${highCount} High` : ''}
                         </p>
                     </div>
                 </div>
                 <button onclick="toggleAlertsPanel()" 
-                        class="w-full sm:w-auto bg-white/20 hover:bg-white/30 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap">
+                        class="w-full sm:w-auto bg-white/20 hover:bg-white/30 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap">
                     View Details
                 </button>
             </div>
         </div>
     `;
+    allClearBanner?.classList.add('hidden');
     banner.classList.remove('hidden');
 }
 
@@ -786,52 +924,61 @@ function displayDetailedAlerts(alerts) {
     container.innerHTML = alerts.map(alert => {
         const severityConfig = getSeverityConfig(alert.severity);
         const typeIcon = getAlertTypeIcon(alert.alert_type);
+        const alertTitle = cleanAlertText(alert.title);
+        const alertDescription = cleanAlertText(alert.description);
+        const warningTitle = cleanAlertText(alert.warning?.title);
+        const warningContent = cleanAlertText(alert.warning?.content);
+        const locationName = cleanAlertText(alert.location?.name || 'Current area');
         
         return `
-            <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-4 border-l-4 ${severityConfig.borderClass} shadow-lg hover:shadow-xl transition-all duration-300 w-full overflow-hidden">
-                <div class="flex items-start justify-between mb-2 sm:mb-3 gap-2">
-                    <div class="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-                        <div class="text-2xl sm:text-3xl flex-shrink-0">${typeIcon}</div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-700 border-l-4 ${severityConfig.borderClass} shadow-sm hover:shadow-md transition-all duration-300 w-full overflow-hidden alert-card alert-card-polished">
+                <div class="flex items-start justify-between mb-2 gap-3">
+                    <div class="flex items-center space-x-2.5 sm:space-x-3 flex-1 min-w-0">
+                        <div class="${severityConfig.iconClass} h-9 w-9 sm:h-10 sm:w-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm alert-icon">
+                            <i class="${typeIcon} text-sm"></i>
+                        </div>
                         <div class="min-w-0 flex-1">
-                            <div class="flex items-center space-x-2 flex-wrap gap-1">
-                                <h4 class="text-sm sm:text-base md:text-lg font-bold text-gray-900 dark:text-white truncate">
-                                    ${alert.title}
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h4 class="alert-title text-gray-950 dark:text-white">
+                                    ${alertTitle}
                                 </h4>
-                                <span class="${severityConfig.badgeClass} px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase flex-shrink-0">
+                                <span class="${severityConfig.badgeClass} px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide flex-shrink-0">
                                     ${alert.severity}
                                 </span>
                             </div>
-                            <p class="text-[10px] sm:text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1 truncate">
-                                ${alert.location.name} • Just now
+                            <p class="alert-meta text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                                ${locationName} - Just now
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <p class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mb-2 sm:mb-3">
-                    ${alert.description}
+                <p class="alert-description text-gray-700 dark:text-gray-300 mb-2 sm:mb-3">
+                    ${alertDescription}
                 </p>
 
                 ${alert.warning ? `
-                    <div class="mb-3 sm:mb-4 p-2.5 sm:p-3 md:p-4 ${severityConfig.bgClass} border-2 ${severityConfig.borderClass} rounded-lg overflow-hidden">
-                        <div class="flex items-center space-x-1.5 sm:space-x-2 mb-1.5 sm:mb-2">
-                            <i class="fas fa-exclamation-triangle text-sm sm:text-base md:text-lg flex-shrink-0"></i>
-                            <h5 class="font-bold text-gray-900 dark:text-white uppercase text-xs sm:text-sm truncate">
-                                ${alert.warning.title}
+                    <div class="mb-2.5 sm:mb-3 p-2.5 sm:p-3 ${severityConfig.bgClass} rounded-lg overflow-hidden alert-warning-panel">
+                        <div class="flex items-center space-x-2 mb-1.5 sm:mb-2">
+                            <span class="${severityConfig.iconClass} h-6 w-6 rounded-md flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-exclamation-triangle text-xs"></i>
+                            </span>
+                            <h5 class="alert-warning-title text-gray-950 dark:text-white uppercase truncate">
+                                ${warningTitle}
                             </h5>
                         </div>
-                        <p class="text-[10px] sm:text-xs md:text-sm text-gray-800 dark:text-gray-200 mb-2 sm:mb-3 leading-relaxed">
-                            ${alert.warning.content}
+                        <p class="alert-warning-copy text-gray-700 dark:text-gray-200 mb-2">
+                            ${warningContent}
                         </p>
                         
                         ${alert.warning.impact && alert.warning.impact.length > 0 ? `
-                            <div class="mb-2 sm:mb-3">
-                                <h6 class="font-semibold text-[10px] sm:text-xs text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2 uppercase">Expected Impacts:</h6>
-                                <ul class="space-y-0.5 sm:space-y-1">
+                            <div>
+                                <h6 class="alert-section-label text-gray-600 dark:text-gray-300 mb-1.5 uppercase">Expected Impacts</h6>
+                                <ul class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                     ${alert.warning.impact.map(impact => `
-                                        <li class="text-[10px] sm:text-xs text-gray-700 dark:text-gray-300 flex items-start space-x-1.5 sm:space-x-2">
-                                            <span class="mt-0.5 flex-shrink-0">${impact.includes('🚨') ? '' : '•'}</span>
-                                            <span class="break-words">${impact}</span>
+                                        <li class="alert-list-item text-gray-700 dark:text-gray-300 flex items-start space-x-2">
+                                            <span class="mt-1.5 h-1 w-1 rounded-full ${severityConfig.dotClass} flex-shrink-0"></span>
+                                            <span class="break-words">${cleanAlertText(impact)}</span>
                                         </li>
                                     `).join('')}
                                 </ul>
@@ -842,12 +989,12 @@ function displayDetailedAlerts(alerts) {
 
                 ${alert.recommendations && alert.recommendations.length > 0 ? `
                     <details class="cursor-pointer group">
-                        <summary class="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center space-x-1.5 sm:space-x-2 list-none">
-                            <i class="fas fa-info-circle text-xs sm:text-sm flex-shrink-0"></i>
+                        <summary class="alert-recommendation-summary text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center space-x-2 list-none">
+                            <i class="fas fa-info-circle text-xs flex-shrink-0"></i>
                             <span>Safety Recommendations (${alert.recommendations.length})</span>
                             <i class="fas fa-chevron-down group-open:rotate-180 transition-transform ml-auto text-xs flex-shrink-0"></i>
                         </summary>
-                        <ul class="mt-1.5 sm:mt-2 space-y-0.5 sm:space-y-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400 pl-3 sm:pl-4">
+                        <ul class="mt-1.5 space-y-1 text-xs text-gray-600 dark:text-gray-400 pl-3 sm:pl-4">
                             ${alert.recommendations.map(rec => `
                                 <li class="flex items-start space-x-1.5 sm:space-x-2">
                                     <span class="text-blue-500 mt-1 flex-shrink-0">•</span>
@@ -857,10 +1004,6 @@ function displayDetailedAlerts(alerts) {
                         </ul>
                     </details>
                 ` : ''}
-
-                <div class="mt-2 sm:mt-3 flex items-center justify-between text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-
-                </div>
             </div>
         `;
     }).join('');
@@ -881,6 +1024,228 @@ function displayDetailedAlerts(alerts) {
         .backdrop-blur-xl {
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
+        }
+
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            border-radius: 0.75rem;
+            box-shadow: 0 14px 35px -24px rgba(15, 23, 42, 0.45);
+        }
+
+        .dark .dashboard-card {
+            background: rgba(31, 41, 55, 0.92);
+            border-color: rgba(55, 65, 81, 0.95);
+            box-shadow: 0 18px 40px -28px rgba(0, 0, 0, 0.9);
+        }
+
+        .dashboard-panel {
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            letter-spacing: 0;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            border-radius: 0.75rem;
+            box-shadow: 0 12px 30px -24px rgba(15, 23, 42, 0.45);
+            transition: box-shadow 220ms ease, transform 220ms ease, border-color 220ms ease;
+        }
+
+        .dashboard-panel:hover {
+            transform: translateY(-1px);
+            border-color: rgba(203, 213, 225, 1);
+            box-shadow: 0 18px 36px -26px rgba(15, 23, 42, 0.55);
+        }
+
+        .dark .dashboard-panel {
+            background: rgba(31, 41, 55, 0.96);
+            border-color: rgba(55, 65, 81, 0.95);
+            box-shadow: 0 18px 40px -30px rgba(0, 0, 0, 0.9);
+        }
+
+        .section-title {
+            font-size: 0.9375rem;
+            line-height: 1.35;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .metric-card,
+        .forecast-chip,
+        .forecast-row {
+            background: rgba(248, 250, 252, 0.92);
+            border: 1px solid rgba(226, 232, 240, 0.85);
+            border-radius: 0.625rem;
+            transition: background-color 220ms ease, border-color 220ms ease, transform 220ms ease;
+        }
+
+        .metric-card:hover,
+        .forecast-chip:hover,
+        .forecast-row:hover {
+            background: rgba(241, 245, 249, 0.96);
+            border-color: rgba(203, 213, 225, 1);
+        }
+
+        .forecast-chip:hover,
+        .forecast-row:hover {
+            transform: translateY(-1px);
+        }
+
+        .dark .metric-card,
+        .dark .forecast-chip,
+        .dark .forecast-row {
+            background: rgba(55, 65, 81, 0.58);
+            border-color: rgba(75, 85, 99, 0.72);
+        }
+
+        .dark .metric-card:hover,
+        .dark .forecast-chip:hover,
+        .dark .forecast-row:hover {
+            background: rgba(75, 85, 99, 0.64);
+            border-color: rgba(107, 114, 128, 0.78);
+        }
+
+        .stat-card {
+            min-height: 112px;
+        }
+
+        .stat-title {
+            font-size: 0.75rem;
+            line-height: 1.2;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .skeleton-bar,
+        .skeleton-block,
+        .skeleton-circle {
+            position: relative;
+            overflow: hidden;
+            background: #e5e7eb;
+        }
+
+        .dark .skeleton-bar,
+        .dark .skeleton-block,
+        .dark .skeleton-circle {
+            background: #374151;
+        }
+
+        .skeleton-bar,
+        .skeleton-block {
+            border-radius: 0.5rem;
+        }
+
+        .skeleton-circle {
+            border-radius: 9999px;
+        }
+
+        .skeleton-bar::after,
+        .skeleton-block::after,
+        .skeleton-circle::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.62), transparent);
+            animation: skeleton-shimmer 1.35s infinite;
+        }
+
+        .dark .skeleton-bar::after,
+        .dark .skeleton-block::after,
+        .dark .skeleton-circle::after {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+        }
+
+        @keyframes skeleton-shimmer {
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        @keyframes softPulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.86;
+            }
+        }
+
+        .animate-soft-pulse {
+            animation: softPulse 1.8s ease-in-out infinite;
+        }
+
+        .alert-glow {
+            box-shadow: 0 18px 40px -24px rgba(239, 68, 68, 0.75);
+        }
+
+        .alert-card:hover {
+            transform: translateY(-1px);
+        }
+
+        .alert-card-polished {
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            letter-spacing: 0;
+        }
+
+        .alert-icon {
+            box-shadow: 0 10px 24px -16px rgba(15, 23, 42, 0.75);
+        }
+
+        .alert-title {
+            font-size: clamp(0.9375rem, 0.9rem + 0.18vw, 1.125rem);
+            line-height: 1.15;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .alert-meta {
+            font-size: 0.75rem;
+            line-height: 1.25;
+            font-weight: 500;
+        }
+
+        .alert-description,
+        .alert-warning-copy {
+            font-size: 0.8125rem;
+            line-height: 1.45;
+            font-weight: 450;
+        }
+
+        .alert-warning-panel {
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        }
+
+        .dark .alert-warning-panel {
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .alert-warning-title {
+            font-size: 0.75rem;
+            line-height: 1.2;
+            font-weight: 800;
+            letter-spacing: 0.025em;
+        }
+
+        .alert-section-label {
+            font-size: 0.625rem;
+            line-height: 1.2;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+        }
+
+        .alert-list-item {
+            font-size: 0.75rem;
+            line-height: 1.35;
+            font-weight: 500;
+        }
+
+        .alert-recommendation-summary {
+            font-size: 0.8125rem;
+            line-height: 1.3;
+            font-weight: 700;
         }
 
         * {

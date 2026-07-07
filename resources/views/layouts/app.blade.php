@@ -1,15 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" x-data="{
-        darkMode: localStorage.getItem('theme')
-            ? localStorage.getItem('theme') === 'dark'
-            : window.matchMedia('(prefers-color-scheme: dark)').matches
-    }" x-init="
-        $watch('darkMode', val => {
-            localStorage.setItem('theme', val ? 'dark' : 'light');
-            document.documentElement.classList.toggle('dark', val);
-        });
-        document.documentElement.classList.toggle('dark', darkMode);
-    " :class="{ 'dark': darkMode }">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -26,6 +16,7 @@
             display: none !important;
         }
     </style>
+    @stack('styles')
 </head>
 
 
@@ -45,7 +36,7 @@
         if (isMobile) {
             sidebarOpen = false;
         }
-    " class="flex h-screen bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 overflow-hidden">
+    " class="flex h-screen bg-slate-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden">
 
     <?php
         $user = Auth::user() ?: (object) [
@@ -70,16 +61,20 @@
         x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
         x-transition:leave="transition-transform ease-in duration-300" x-transition:leave-start="translate-x-0"
         x-transition:leave-end="-translate-x-full" @click.away="if (isMobile) sidebarOpen = false"
-        class="fixed lg:relative inset-y-0 left-0 z-50 w-60 bg-gray-800 text-white dark:bg-white dark:text-gray-800 shadow-md flex flex-col">
+        class="fixed lg:relative inset-y-0 left-0 z-50 w-56 bg-white text-gray-700 dark:bg-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
 
-        <div class="p-4 font-bold text-white dark:text-gray-800 text-lg">
-            <span>BukCast</span>
+        <div class="px-5 py-5 border-b border-gray-100 dark:border-gray-800">
+            <div class="font-bold text-gray-900 dark:text-white text-lg leading-tight">BukCast</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Weather monitoring</div>
         </div>
 
-        <nav class="flex-1 px-2 space-y-2 overflow-y-auto">
+        <nav class="px-3 py-4 space-y-1 overflow-y-auto">
+            <div class="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                Menu
+            </div>
             @if(false)
                 <a href="{{ route('admin.dashboard') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('admin.dashboard') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                    class="flex items-center space-x-2 px-4 py-2 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('admin.dashboard') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -89,7 +84,7 @@
                 </a>
             @else
                 <a href="{{ route('dashboard') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('dashboard') || request()->routeIs('home') || request()->routeIs('user.dashboard') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                    class="flex items-center space-x-3 px-3 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded-lg {{ request()->routeIs('dashboard') || request()->routeIs('home') || request()->routeIs('user.dashboard') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -100,7 +95,7 @@
             @endif
 
             <a href="{{ route('user.map.show') }}" @click="if (isMobile) sidebarOpen = false"
-                class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('user.map.show') || request()->routeIs('map.show') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                class="flex items-center space-x-3 px-3 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded-lg {{ request()->routeIs('user.map.show') || request()->routeIs('map.show') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -110,7 +105,7 @@
             </a>
 
             <a href="{{ route('user.weather_reports.show') }}" @click="if (isMobile) sidebarOpen = false"
-                class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('user.weather_reports.show') || request()->routeIs('weather_reports.show') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                class="flex items-center space-x-3 px-3 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded-lg {{ request()->routeIs('user.weather_reports.show') || request()->routeIs('weather_reports.show') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -121,7 +116,7 @@
 
             @if(false)
                 <a href="{{ route('weather_reports.show') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('weather_reports.show') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                    class="flex items-center space-x-2 px-4 py-2 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('weather_reports.show') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -131,7 +126,7 @@
                 </a>
             @elseif(false)
                 <a href="{{ route('user.weather_reports.show') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('user.weather_reports.show') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                    class="flex items-center space-x-2 px-4 py-2 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('user.weather_reports.show') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -143,7 +138,7 @@
 
             @if(false)
                 <a href="{{ route('admin.user_management') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('admin.user_management') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                    class="flex items-center space-x-2 px-4 py-2 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('admin.user_management') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -153,7 +148,7 @@
                 </a>
 
                 <a href="{{ route('logs.show') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('logs.show') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                    class="flex items-center space-x-2 px-4 py-2 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('logs.show') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -169,10 +164,10 @@
     <div class="flex-1 @yield('fullscreen', 'flex flex-col') w-full overflow-hidden transition-all duration-300">
         <!-- Header -->
         <header
-            class="@yield('header-class', 'relative') bg-white text-gray-800 p-4 flex justify-between items-center shadow-sm dark:bg-gray-800 dark:text-white z-30">
+            class="@yield('header-class', 'relative') bg-white text-gray-800 p-4 flex justify-between items-center shadow-sm border-b border-gray-200 dark:bg-gray-900 dark:text-white dark:border-gray-800 z-30">
             <div class="flex items-center space-x-3">
                 <button @click="sidebarOpen = !sidebarOpen"
-                    class="p-2 rounded hover:bg-gray-800 hover:text-white dark:hover:bg-white dark:hover:text-gray-800 focus:outline-none transition-colors">
+                    class="p-2 rounded hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white focus:outline-none transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -185,11 +180,11 @@
             @if(Auth::check())
             <div x-data="{ profileOpen: false }" class="relative">
                 <button @click="profileOpen = !profileOpen" class="flex items-center space-x-2 focus:outline-none px-3 py-2 rounded transition-colors 
-                           hover:bg-gray-700 hover:text-white">
+                           hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white">
                     <div class="flex items-center space-x-2">
                         <div class="relative">
                             <div
-                                class="w-8 h-8 bg-gray-800 text-white dark:bg-white dark:text-gray-800 rounded-full flex items-center justify-center font-semibold transition-colors duration-200">
+                                class="w-8 h-8 bg-blue-600 text-white dark:bg-white dark:text-gray-800 rounded-full flex items-center justify-center font-semibold transition-colors duration-200">
                                 {{ strtoupper(substr($user->fname ?? $user->name ?? 'U', 0, 1)) }}
                             </div>
 
@@ -289,7 +284,7 @@
             @endif
         </header>
 
-        <main class="@yield('main-class', 'flex-1 overflow-y-auto p-4 dark:bg-gray-200 ')">
+        <main class="@yield('main-class', 'flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-gray-900 ')">
             @yield('content')
         </main>
     </div>
