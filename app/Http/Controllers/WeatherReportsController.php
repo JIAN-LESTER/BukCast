@@ -16,10 +16,10 @@ class WeatherReportsController extends Controller
      */
     public function viewWeatherReports()
     {
-        // Paginate snapshots, 9 per page
+        // Load all snapshots for the scrollable report list
         $snapshots = Snapshot::with(['weatherReport.location'])
             ->orderBy('created_at', 'asc')
-            ->paginate(9);
+            ->get();
 
         // Get today's snapshots for modal functionality
         $todaySnapshots = $this->getTodaySnapshotsByPeriod();
@@ -41,7 +41,7 @@ class WeatherReportsController extends Controller
             })
                 ->with(['weatherReport.location'])
                 ->orderBy('created_at', 'asc')
-                ->paginate(9);
+                ->get();
 
             $todaySnapshots = $this->getTodaySnapshotsByPeriod();
 
@@ -53,7 +53,7 @@ class WeatherReportsController extends Controller
 
         $snapshots = Snapshot::with(['weatherReport.location'])
             ->orderBy('created_at', 'asc')
-            ->paginate(9);
+            ->get();
 
         $todaySnapshots = $this->getTodaySnapshotsByPeriod();
 

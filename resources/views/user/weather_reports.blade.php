@@ -2,9 +2,10 @@
 
 @section('title', 'Weather Reports')
 @section('header', 'Weather Reports')
+@section('main-class', 'flex-1 overflow-hidden p-4 bg-slate-50 dark:bg-gray-900')
 
 @section('content')
-<div class="space-y-4 sm:space-y-6 px-3 sm:px-0">
+<div class="h-full min-h-0 flex flex-col gap-4 sm:gap-6 px-3 sm:px-0">
     <!-- Notification Container -->
     <div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2 max-w-[calc(100vw-2rem)] sm:max-w-sm"></div>
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-5 gap-3 sm:gap-0">
@@ -22,10 +23,10 @@
 </div>
 
     @if(isset($snapshots) && !$snapshots->isEmpty())
-        <div class="bg-gray-300 rounded-lg shadow-sm p-3 sm:p-6">
+        <div class="flex-1 min-h-0 bg-gray-300 rounded-lg shadow-sm p-3 sm:p-6">
             
             <!-- Weather Cards Grid -->
-            <div class="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" id="weatherCardsContainer">
+            <div class="grid h-full overflow-y-auto pr-1 sm:pr-2 gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" id="weatherCardsContainer">
                 @foreach($snapshots as $snapshot)
                     @php
                         $location = $snapshot->weatherReport->location ?? null;
@@ -110,10 +111,6 @@
                 @endforeach
             </div>
 
-            <!-- Pagination -->
-            <div class="mt-4 sm:mt-6">
-                {{ $snapshots->links() }}
-            </div>
         </div>
    @else
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-6 sm:p-12 text-center mx-3 sm:mx-0">
