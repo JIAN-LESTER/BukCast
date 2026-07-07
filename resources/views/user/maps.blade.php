@@ -23,7 +23,7 @@
 
         <!-- Weather Panel - Mobile Optimized -->
         <div id="weatherPanel"
-            class="fixed inset-x-2 bottom-2 sm:absolute sm:top-4 sm:left-4 sm:right-auto sm:bottom-auto bg-white/95 backdrop-blur-sm rounded-lg shadow-xl w-auto sm:w-full sm:max-w-md z-20 hidden max-h-[70vh] sm:max-h-[80vh] overflow-y-auto">
+            class="fixed inset-x-4 bottom-4 sm:absolute sm:top-4 sm:left-4 sm:right-auto sm:bottom-auto bg-white/95 backdrop-blur-sm rounded-lg shadow-xl w-auto sm:w-full sm:max-w-md z-20 hidden max-h-[48vh] sm:max-h-[80vh] overflow-y-auto">
         </div>
 
         <!-- All Controls - Mobile Optimized -->
@@ -271,8 +271,8 @@
             /* Weather panel on mobile - fixed at bottom */
             #weatherPanel {
                 position: fixed !important;
-                max-height: 70vh !important;
-                border-radius: 12px 12px 0 0 !important;
+                max-height: 48vh !important;
+                border-radius: 12px !important;
             }
 
             /* Prevent body scroll when panel is open on mobile */
@@ -577,14 +577,14 @@
 
             const weatherPanel = document.getElementById('weatherPanel');
             weatherPanel.innerHTML = `
-                <div class="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200">
+                <div class="flex justify-between items-center p-2 sm:p-4 border-b border-gray-200">
                     <div class="flex items-center gap-2 sm:gap-3">
                         <div class="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-blue-600"></div>
                         <span class="text-gray-600 font-medium text-sm sm:text-base">Loading...</span>
                     </div>
                     <button onclick="closeWeatherPanel()" class="text-gray-500 hover:text-gray-700 text-xl font-bold p-1">&times;</button>
                 </div>
-                <div class="p-3 sm:p-4">
+                <div class="p-2 sm:p-4">
                     <div class="text-center text-gray-500 text-sm">Please wait...</div>
                 </div>
             `;
@@ -602,7 +602,7 @@
             } catch (error) {
                 console.error('Error fetching weather data:', error);
                 weatherPanel.innerHTML = `
-                    <div class="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center p-2 sm:p-4 border-b border-gray-200">
                         <h3 class="font-bold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
                             <span class="text-red-500">⚠️</span>
                             <span class="hidden sm:inline">Weather Data Unavailable</span>
@@ -610,8 +610,8 @@
                         </h3>
                         <button onclick="closeWeatherPanel()" class="text-gray-500 hover:text-gray-700 text-xl font-bold p-1">&times;</button>
                     </div>
-                    <div class="p-3 sm:p-4">
-                        <div class="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
+                    <div class="p-2 sm:p-4">
+                        <div class="text-xs text-gray-500 p-2 sm:p-3 bg-gray-50 rounded-lg">
                             Unable to fetch weather data. Please try another location.
                         </div>
                     </div>
@@ -721,11 +721,11 @@
             return `
                 <div class="bg-white rounded-lg overflow-hidden w-full max-w-full dark:text-gray-800">
                     <!-- Header -->
-                    <div class="flex justify-between items-start p-3 sm:p-4 bg-gradient-to-r from-gray-700 to-gray-800 text-white">
+                    <div class="flex justify-between items-start p-2 sm:p-4 bg-gradient-to-r from-gray-700 to-gray-800 text-white">
                         <div class="flex items-start gap-2 flex-1 min-w-0">
-                            <span class="text-3xl sm:text-4xl flex-shrink-0">${weatherIcon}</span>
+                            <span class="text-2xl sm:text-4xl flex-shrink-0">${weatherIcon}</span>
                             <div class="flex-1 min-w-0">
-                                <h3 class="font-bold text-base sm:text-lg leading-tight truncate">${locationName}</h3>
+                                <h3 class="font-bold text-sm sm:text-lg leading-tight truncate">${locationName}</h3>
                                 <p class="text-xs sm:text-sm opacity-90 truncate">${weatherDesc}</p>
                             </div>
                         </div>
@@ -734,42 +734,42 @@
                     </div>
 
                     <!-- Stats Grid -->
-                    <div class="p-2 sm:p-3 border-b border-gray-100">
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded p-2 sm:p-3 border border-orange-200">
+                    <div class="p-1.5 sm:p-3 border-b border-gray-100">
+                        <div class="grid grid-cols-2 gap-1.5 sm:gap-2">
+                            <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded p-1.5 sm:p-3 border border-orange-200">
                                 <div class="text-xs font-medium text-orange-700">🌡️ TEMP</div>
-                                <div class="text-lg sm:text-2xl font-bold text-orange-900">${temp}°C</div>
+                                <div class="text-base sm:text-2xl font-bold text-orange-900">${temp}°C</div>
                                 <div class="text-xs text-orange-600 truncate">Feels ${feelsLike}°</div>
                             </div>
 
-                            <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded p-2 sm:p-3 border border-blue-200">
+                            <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded p-1.5 sm:p-3 border border-blue-200">
                                 <div class="text-xs font-medium text-blue-700">🌧️ RAIN</div>
-                                <div class="text-lg sm:text-2xl font-bold text-blue-900">${next24Hours[0]?.rainChance || 0}%</div>
+                                <div class="text-base sm:text-2xl font-bold text-blue-900">${next24Hours[0]?.rainChance || 0}%</div>
                                 <div class="text-xs text-blue-600 truncate">${(next24Hours[0]?.rainAmount || 0).toFixed(1)} mm</div>
                             </div>
 
-                            <div class="bg-gradient-to-br from-teal-50 to-emerald-50 rounded p-2 sm:p-3 border border-teal-200">
+                            <div class="bg-gradient-to-br from-teal-50 to-emerald-50 rounded p-1.5 sm:p-3 border border-teal-200">
                                 <div class="text-xs font-medium text-teal-700">🌪️ WIND</div>
-                                <div class="text-lg sm:text-2xl font-bold text-teal-900">${windSpeed.toFixed(1)}</div>
+                                <div class="text-base sm:text-2xl font-bold text-teal-900">${windSpeed.toFixed(1)}</div>
                                 <div class="text-xs text-teal-600 truncate">m/s · ${getCardinalDirection(windDir)}</div>
                             </div>
 
-                            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded p-2 sm:p-3 border border-purple-200">
+                            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded p-1.5 sm:p-3 border border-purple-200">
                                 <div class="text-xs font-medium text-purple-700">💧 HUMID</div>
-                                <div class="text-lg sm:text-2xl font-bold text-purple-900">${humidity}%</div>
+                                <div class="text-base sm:text-2xl font-bold text-purple-900">${humidity}%</div>
                                 <div class="text-xs text-purple-600 truncate">${pressure.toFixed(0)} hPa</div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Hourly Forecast -->
-                    <div class="p-2 sm:p-3">
-                        <h4 class="text-xs font-semibold text-gray-600 mb-2">Next 18 Hours</h4>
+                    <div class="p-1.5 sm:p-3">
+                        <h4 class="text-xs font-semibold text-gray-600 mb-1.5 sm:mb-2">Next 18 Hours</h4>
                         <div class="space-y-1">
-                            ${next24Hours.map(hour => `
-                                <div class="flex items-center justify-between p-1.5 sm:p-2 rounded bg-gray-50 hover:bg-gray-100">
+                            ${next24Hours.map((hour, index) => `
+                                <div class="${index >= 4 ? 'hidden sm:flex' : 'flex'} items-center justify-between p-1.5 sm:p-2 rounded bg-gray-50 hover:bg-gray-100">
                                     <div class="flex items-center gap-2 flex-1 min-w-0">
-                                        <span class="text-lg sm:text-xl flex-shrink-0">${hour.icon}</span>
+                                        <span class="text-base sm:text-xl flex-shrink-0">${hour.icon}</span>
                                         <div class="text-xs sm:text-sm font-medium truncate">${hour.time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
                                     </div>
                                     <div class="flex items-center gap-2 flex-shrink-0">
@@ -782,7 +782,7 @@
                     </div>
 
                     <!-- Footer -->
-                    <div class="p-2 sm:p-3 bg-gray-50 border-t border-gray-200">
+                    <div class="p-1.5 sm:p-3 bg-gray-50 border-t border-gray-200">
                         <div class="text-xs text-gray-500 text-center">
                             Updated: ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                         </div>
