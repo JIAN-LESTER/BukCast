@@ -135,10 +135,7 @@ class WeatherReportsController extends Controller
         try {
             \Log::info('Manual forecast storage triggered');
 
-            app(BukidnonLocationsSeeder::class)->run();
-            
-            // Get all locations
-            $locations = Location::all();
+            $locations = $this->seedAndGetBukidnonLocations();
             
             if ($locations->isEmpty()) {
                 return response()->json([
@@ -195,6 +192,13 @@ class WeatherReportsController extends Controller
                 'message' => 'Failed to store forecasts: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function seedAndGetBukidnonLocations()
+    {
+        app(BukidnonLocationsSeeder::class)->run();
+
+        return Location::where('name', 'like', '%, Bukidnon')->get();
     }
 
     private function fetchForecastData($latitude, $longitude)
@@ -490,10 +494,7 @@ public function refreshAll(Request $request)
         
         \Log::info("Deleted {$deletedReports} weather reports and {$deletedSnapshots} snapshots");
 
-        app(BukidnonLocationsSeeder::class)->run();
-        
-        // Step 2: Get all locations
-        $locations = Location::all();
+        $locations = $this->seedAndGetBukidnonLocations();
         
         if ($locations->isEmpty()) {
             return response()->json([
