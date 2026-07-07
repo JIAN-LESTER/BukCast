@@ -301,8 +301,23 @@
         }
     </style>
 <script>
-        const openWeatherKey = "{{ env('OPENWEATHER_API_KEY') }}";
-        const thunderforestKey = "{{ env('THUNDERFOREST_MAPS_API_KEY') }}";
+        const openWeatherKey = @json(config('services.openweather.key', ''));
+        const thunderforestKey = @json(config('services.thunderforest.key', ''));
+        const hasThunderforestKey = thunderforestKey.trim().length > 0 && !thunderforestKey.includes('{') && !thunderforestKey.includes('$');
+
+        function createBaseLayer(style) {
+            if (!hasThunderforestKey) {
+                return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors'
+                });
+            }
+
+            return L.tileLayer('https://{s}.tile.thunderforest.com/' + style + '/{z}/{x}/{y}.png?apikey=' + encodeURIComponent(thunderforestKey), {
+                subdomains: ['a', 'b', 'c'],
+                maxZoom: 22
+            });
+        }
 
         // Initialize map
         const map = L.map('map', {
@@ -314,38 +329,14 @@
 
         // Base layers
         const baseLayers = {
-            landscape: L.tileLayer(`https://tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-     
-                maxZoom: 22
-            }),
-            outdoors: L.tileLayer(`https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-          
-                maxZoom: 22
-            }),
-            transport: L.tileLayer(`https://tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-           
-                maxZoom: 22
-            }),
-            transportDark: L.tileLayer(`https://tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-   
-                maxZoom: 22
-            }),
-            spinalMap: L.tileLayer(`https://tile.thunderforest.com/spinal-map/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-      
-                maxZoom: 22
-            }),
-            pioneer: L.tileLayer(`https://tile.thunderforest.com/pioneer/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-   
-                maxZoom: 22
-            }),
-            mobileAtlas: L.tileLayer(`https://tile.thunderforest.com/mobile-atlas/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-        
-                maxZoom: 22
-            }),
-            neighbourhood: L.tileLayer(`https://tile.thunderforest.com/neighbourhood/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-              
-                maxZoom: 22
-            })
+            landscape: createBaseLayer('landscape'),
+            outdoors: createBaseLayer('outdoors'),
+            transport: createBaseLayer('transport'),
+            transportDark: createBaseLayer('transport-dark'),
+            spinalMap: createBaseLayer('spinal-map'),
+            pioneer: createBaseLayer('pioneer'),
+            mobileAtlas: createBaseLayer('mobile-atlas'),
+            neighbourhood: createBaseLayer('neighbourhood')
         };
 
         let currentBaseLayer = baseLayers.landscape;
@@ -360,7 +351,7 @@
 
                 maxZoom: 18
             }),
-            precipitation: null,
+            precipitation: L.layerGroup(),
             wind: L.tileLayer(`https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${openWeatherKey}`, {
                 opacity: 0.6,
   
@@ -368,6 +359,15 @@
             })
         };
 
+        function getLatestRainViewerTileUrl(data) {
+            const latestFrame = data?.radar?.past?.[data.radar.past.length - 1];
+
+            if (!data?.host || !latestFrame?.path) {
+                throw new Error('RainViewer radar data is unavailable.');
+            }
+
+            return `${data.host}${latestFrame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+        }
 
       // Initialize RainViewer layer
         async function initRainViewerLayer() {
@@ -375,30 +375,27 @@
                 const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
                 const data = await response.json();
                 
-                const latestTimestamp = data.radar.past[data.radar.past.length - 1].time;
+                const latestFrame = data.radar.past[data.radar.past.length - 1];
                 
-                rainviewerLayer = L.tileLayer(
-                    `https://tilecache.rainviewer.com/v2/radar/${latestTimestamp}/256/{z}/{x}/{y}/2/1_1.png`,
-                    {
-                        opacity: 0.6,
-                        tileSize: 256,
-                        zoomOffset: 0,
-                        maxZoom: 18
-                    }
-                );
+                rainviewerLayer = L.tileLayer(getLatestRainViewerTileUrl(data), {
+                    opacity: 0.65,
+                    tileSize: 256,
+                    zoomOffset: 0,
+                    maxNativeZoom: 7,
+                    updateWhenZooming: false,
+                    keepBuffer: 4,
+                    maxZoom: 18
+                });
                 
+                if (map.hasLayer(weatherLayers.precipitation)) {
+                    map.removeLayer(weatherLayers.precipitation);
+                    rainviewerLayer.addTo(map);
+                }
+
                 weatherLayers.precipitation = rainviewerLayer;
-                console.log('✅ RainViewer initialized with timestamp:', new Date(latestTimestamp * 1000).toLocaleString());
+                console.log('✅ RainViewer initialized with timestamp:', new Date(latestFrame.time * 1000).toLocaleString());
             } catch (error) {
                 console.error('Error initializing RainViewer:', error);
-                weatherLayers.precipitation = L.layerGroup([
-                    L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${openWeatherKey}`, {
-                        opacity: 0.6,
-                    }),
-                    L.tileLayer(`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${openWeatherKey}`, {
-                        opacity: 0.4,
-                    })
-                ]);
             }
         }
 
@@ -410,8 +407,7 @@
                 const latestTimestamp = data.radar.past[data.radar.past.length - 1].time;
                 
                 if (rainviewerLayer) {
-                    const newUrl = `https://tilecache.rainviewer.com/v2/radar/${latestTimestamp}/256/{z}/{x}/{y}/2/1_1.png`;
-                    rainviewerLayer.setUrl(newUrl);
+                    rainviewerLayer.setUrl(getLatestRainViewerTileUrl(data));
                     console.log('🔄 RainViewer updated:', new Date(latestTimestamp * 1000).toLocaleString());
                 }
             } catch (error) {
