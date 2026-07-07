@@ -22,7 +22,7 @@ class WeatherReportsController extends Controller
         // Get today's snapshots for modal functionality
         $todaySnapshots = $this->getTodaySnapshotsByPeriod();
 
-        return view('admin.weather_reports', [
+        return view('user.weather_reports', [
             'snapshots' => $snapshots,
             'todaySnapshots' => $todaySnapshots,
         ]);

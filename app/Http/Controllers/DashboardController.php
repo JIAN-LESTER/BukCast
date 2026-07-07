@@ -12,6 +12,11 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
+    public function viewDashboard(Request $request)
+    {
+        return view('user.dashboard');
+    }
+
     public function viewAdminDashboard(Request $request)
     {
    

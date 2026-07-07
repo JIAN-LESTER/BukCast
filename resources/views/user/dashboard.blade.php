@@ -8,7 +8,7 @@
     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-3 sm:mb-4 space-y-2 lg:space-y-0">
         <div class="flex-1 w-full">
             <h1 class="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-800 mb-1">
-                Welcome, {{ auth()->user()->fname ?? 'User' }}
+                Welcome, User
             </h1>
         </div>
     </div>

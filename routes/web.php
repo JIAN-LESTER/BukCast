@@ -25,13 +25,12 @@
     Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
     Route::get('/dashboard', [DashboardController::class, 'viewDashboard'])->name('dashboard');
-    Route::get('/reports-maps', [WeatherReportsController::class, 'viewReportsAndMaps'])->name('reports_maps.show');
     Route::get('/admin/dashboard', fn () => redirect()->route('dashboard'))->name('admin.dashboard');
 
     Route::get('/user/dashboard', [DashboardController::class, 'viewDashboard'])->name('user.dashboard');
 
 
-    Route::middleware(['auth'])->group(function () {
+    Route::group([], function () {
         Route::get('/map', [MapsController::class, 'show'])->name('map.show');
         Route::get('/weather_reports', [WeatherReportsController::class, 'viewWeatherReports'])->name('weather_reports.show');
         Route::get('/weather-reports', [WeatherReportsController::class, 'viewWeatherReports']);
@@ -70,10 +69,6 @@
    
 
     Route::middleware(['auth'])->group(function () {
-        // Weather Reports routes (no admin prefix)
-        Route::get('/weather-reports', [WeatherReportsController::class, 'viewWeatherReports'])
-            ->name('weather_reports.show');
-        
         // Store forecasts NOW (instant storage)
         Route::post('/weather-reports/store-now', [WeatherReportsController::class, 'storeNow'])
             ->name('weather_reports.store_now');
