@@ -37,12 +37,22 @@ return [
 
     'openweather' => [
     'key' => env('OPENWEATHER_API_KEY'),
+    'verify_ssl' => env('OPENWEATHER_VERIFY_SSL', env('APP_ENV') === 'production'),
+    'ca_bundle' => env('OPENWEATHER_CA_BUNDLE'),
 ],
 
-'google' => [
-    'client_id' => env('GOOGLE_CLIENT_ID'),
-    'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-    'redirect' => env('GOOGLE_REDIRECT_URI'),
-],
+    'thunderforest' => [
+        'key' => env('THUNDERFOREST_MAPS_API_KEY'),
+    ],
+
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    'google_maps' => [
+        'key' => env('GOOGLE_MAPS_API_KEY'),
+    ],
 
 ];

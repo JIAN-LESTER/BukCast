@@ -5,18 +5,27 @@ namespace App\Console\Commands;
 use App\Models\Location;
 use App\Models\WeatherReport;
 use App\Models\Snapshot;
+use App\Support\OpenWeatherClient;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Database\Seeders\BukidnonLocationsSeeder;
 
 class StoreWeatherForecasts extends Command
 {
-    protected $signature = 'weather:store-forecasts';
+    protected $signature = 'weather:store-forecasts {--refresh : Delete existing reports before storing fresh forecasts}';
     protected $description = 'Store 4-period weather forecasts for all locations';
 
     public function handle()
     {
         $this->info('Starting automatic weather forecast storage...');
+
+        app(BukidnonLocationsSeeder::class)->run();
+
+        if ($this->option('refresh')) {
+            Snapshot::query()->delete();
+            WeatherReport::query()->delete();
+            $this->info('Existing weather reports deleted.');
+        }
         
         // Get all locations from database
         $locations = Location::all();
@@ -69,19 +78,9 @@ class StoreWeatherForecasts extends Command
 
     private function fetchForecastData($latitude, $longitude)
     {
-        $apiKey = config('services.openweather.key');
-        
-        if (!$apiKey) {
-            throw new \Exception('OpenWeatherMap API key not configured');
-        }
-
-        $url = "https://api.openweathermap.org/data/2.5/forecast";
-        
-        $response = Http::timeout(15)->get($url, [
+        $response = OpenWeatherClient::get('forecast', [
             'lat' => $latitude,
             'lon' => $longitude,
-            'units' => 'metric',
-            'appid' => $apiKey
         ]);
 
         if ($response->failed()) {

@@ -23,7 +23,7 @@
 
         <!-- Weather Panel - Mobile Optimized -->
         <div id="weatherPanel"
-            class="fixed inset-x-2 bottom-2 sm:absolute sm:top-4 sm:left-4 sm:right-auto sm:bottom-auto bg-white/95 backdrop-blur-sm rounded-lg shadow-xl w-auto sm:w-full sm:max-w-md z-20 hidden max-h-[70vh] sm:max-h-[80vh] overflow-y-auto">
+            class="fixed inset-x-4 bottom-4 sm:absolute sm:top-4 sm:left-4 sm:right-auto sm:bottom-auto bg-white/95 backdrop-blur-sm rounded-lg shadow-xl w-auto sm:w-full sm:max-w-md z-20 hidden max-h-[48vh] sm:max-h-[80vh] overflow-y-auto">
         </div>
 
         <!-- All Controls - Mobile Optimized -->
@@ -271,8 +271,8 @@
             /* Weather panel on mobile - fixed at bottom */
             #weatherPanel {
                 position: fixed !important;
-                max-height: 70vh !important;
-                border-radius: 12px 12px 0 0 !important;
+                max-height: 48vh !important;
+                border-radius: 12px !important;
             }
 
             /* Prevent body scroll when panel is open on mobile */
@@ -301,8 +301,23 @@
         }
     </style>
 <script>
-        const openWeatherKey = "{{ env('OPENWEATHER_API_KEY') }}";
-        const thunderforestKey = "{{ env('THUNDERFOREST_MAPS_API_KEY') }}";
+        const openWeatherKey = @json(config('services.openweather.key', ''));
+        const thunderforestKey = @json(config('services.thunderforest.key', ''));
+        const hasThunderforestKey = thunderforestKey.trim().length > 0 && !thunderforestKey.includes('{') && !thunderforestKey.includes('$');
+
+        function createBaseLayer(style) {
+            if (!hasThunderforestKey) {
+                return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors'
+                });
+            }
+
+            return L.tileLayer('https://{s}.tile.thunderforest.com/' + style + '/{z}/{x}/{y}.png?apikey=' + encodeURIComponent(thunderforestKey), {
+                subdomains: ['a', 'b', 'c'],
+                maxZoom: 22
+            });
+        }
 
         // Initialize map
         const map = L.map('map', {
@@ -314,38 +329,14 @@
 
         // Base layers
         const baseLayers = {
-            landscape: L.tileLayer(`https://tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-     
-                maxZoom: 22
-            }),
-            outdoors: L.tileLayer(`https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-          
-                maxZoom: 22
-            }),
-            transport: L.tileLayer(`https://tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-           
-                maxZoom: 22
-            }),
-            transportDark: L.tileLayer(`https://tile.thunderforest.com/transport-dark/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-   
-                maxZoom: 22
-            }),
-            spinalMap: L.tileLayer(`https://tile.thunderforest.com/spinal-map/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-      
-                maxZoom: 22
-            }),
-            pioneer: L.tileLayer(`https://tile.thunderforest.com/pioneer/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-   
-                maxZoom: 22
-            }),
-            mobileAtlas: L.tileLayer(`https://tile.thunderforest.com/mobile-atlas/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-        
-                maxZoom: 22
-            }),
-            neighbourhood: L.tileLayer(`https://tile.thunderforest.com/neighbourhood/{z}/{x}/{y}.png?apikey=${thunderforestKey}`, {
-              
-                maxZoom: 22
-            })
+            landscape: createBaseLayer('landscape'),
+            outdoors: createBaseLayer('outdoors'),
+            transport: createBaseLayer('transport'),
+            transportDark: createBaseLayer('transport-dark'),
+            spinalMap: createBaseLayer('spinal-map'),
+            pioneer: createBaseLayer('pioneer'),
+            mobileAtlas: createBaseLayer('mobile-atlas'),
+            neighbourhood: createBaseLayer('neighbourhood')
         };
 
         let currentBaseLayer = baseLayers.landscape;
@@ -360,7 +351,7 @@
 
                 maxZoom: 18
             }),
-            precipitation: null,
+            precipitation: L.layerGroup(),
             wind: L.tileLayer(`https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${openWeatherKey}`, {
                 opacity: 0.6,
   
@@ -368,6 +359,15 @@
             })
         };
 
+        function getLatestRainViewerTileUrl(data) {
+            const latestFrame = data?.radar?.past?.[data.radar.past.length - 1];
+
+            if (!data?.host || !latestFrame?.path) {
+                throw new Error('RainViewer radar data is unavailable.');
+            }
+
+            return `${data.host}${latestFrame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+        }
 
       // Initialize RainViewer layer
         async function initRainViewerLayer() {
@@ -375,30 +375,27 @@
                 const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
                 const data = await response.json();
                 
-                const latestTimestamp = data.radar.past[data.radar.past.length - 1].time;
+                const latestFrame = data.radar.past[data.radar.past.length - 1];
                 
-                rainviewerLayer = L.tileLayer(
-                    `https://tilecache.rainviewer.com/v2/radar/${latestTimestamp}/256/{z}/{x}/{y}/2/1_1.png`,
-                    {
-                        opacity: 0.6,
-                        tileSize: 256,
-                        zoomOffset: 0,
-                        maxZoom: 18
-                    }
-                );
+                rainviewerLayer = L.tileLayer(getLatestRainViewerTileUrl(data), {
+                    opacity: 0.65,
+                    tileSize: 256,
+                    zoomOffset: 0,
+                    maxNativeZoom: 7,
+                    updateWhenZooming: false,
+                    keepBuffer: 4,
+                    maxZoom: 18
+                });
                 
+                if (map.hasLayer(weatherLayers.precipitation)) {
+                    map.removeLayer(weatherLayers.precipitation);
+                    rainviewerLayer.addTo(map);
+                }
+
                 weatherLayers.precipitation = rainviewerLayer;
-                console.log('✅ RainViewer initialized with timestamp:', new Date(latestTimestamp * 1000).toLocaleString());
+                console.log('✅ RainViewer initialized with timestamp:', new Date(latestFrame.time * 1000).toLocaleString());
             } catch (error) {
                 console.error('Error initializing RainViewer:', error);
-                weatherLayers.precipitation = L.layerGroup([
-                    L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${openWeatherKey}`, {
-                        opacity: 0.6,
-                    }),
-                    L.tileLayer(`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${openWeatherKey}`, {
-                        opacity: 0.4,
-                    })
-                ]);
             }
         }
 
@@ -410,8 +407,7 @@
                 const latestTimestamp = data.radar.past[data.radar.past.length - 1].time;
                 
                 if (rainviewerLayer) {
-                    const newUrl = `https://tilecache.rainviewer.com/v2/radar/${latestTimestamp}/256/{z}/{x}/{y}/2/1_1.png`;
-                    rainviewerLayer.setUrl(newUrl);
+                    rainviewerLayer.setUrl(getLatestRainViewerTileUrl(data));
                     console.log('🔄 RainViewer updated:', new Date(latestTimestamp * 1000).toLocaleString());
                 }
             } catch (error) {
@@ -581,14 +577,14 @@
 
             const weatherPanel = document.getElementById('weatherPanel');
             weatherPanel.innerHTML = `
-                <div class="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200">
+                <div class="flex justify-between items-center p-2 sm:p-4 border-b border-gray-200">
                     <div class="flex items-center gap-2 sm:gap-3">
                         <div class="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-blue-600"></div>
                         <span class="text-gray-600 font-medium text-sm sm:text-base">Loading...</span>
                     </div>
                     <button onclick="closeWeatherPanel()" class="text-gray-500 hover:text-gray-700 text-xl font-bold p-1">&times;</button>
                 </div>
-                <div class="p-3 sm:p-4">
+                <div class="p-2 sm:p-4">
                     <div class="text-center text-gray-500 text-sm">Please wait...</div>
                 </div>
             `;
@@ -606,7 +602,7 @@
             } catch (error) {
                 console.error('Error fetching weather data:', error);
                 weatherPanel.innerHTML = `
-                    <div class="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center p-2 sm:p-4 border-b border-gray-200">
                         <h3 class="font-bold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
                             <span class="text-red-500">⚠️</span>
                             <span class="hidden sm:inline">Weather Data Unavailable</span>
@@ -614,8 +610,8 @@
                         </h3>
                         <button onclick="closeWeatherPanel()" class="text-gray-500 hover:text-gray-700 text-xl font-bold p-1">&times;</button>
                     </div>
-                    <div class="p-3 sm:p-4">
-                        <div class="text-xs text-gray-500 p-3 bg-gray-50 rounded-lg">
+                    <div class="p-2 sm:p-4">
+                        <div class="text-xs text-gray-500 p-2 sm:p-3 bg-gray-50 rounded-lg">
                             Unable to fetch weather data. Please try another location.
                         </div>
                     </div>
@@ -725,11 +721,11 @@
             return `
                 <div class="bg-white rounded-lg overflow-hidden w-full max-w-full dark:text-gray-800">
                     <!-- Header -->
-                    <div class="flex justify-between items-start p-3 sm:p-4 bg-gradient-to-r from-gray-700 to-gray-800 text-white">
+                    <div class="flex justify-between items-start p-2 sm:p-4 bg-gradient-to-r from-gray-700 to-gray-800 text-white">
                         <div class="flex items-start gap-2 flex-1 min-w-0">
-                            <span class="text-3xl sm:text-4xl flex-shrink-0">${weatherIcon}</span>
+                            <span class="text-2xl sm:text-4xl flex-shrink-0">${weatherIcon}</span>
                             <div class="flex-1 min-w-0">
-                                <h3 class="font-bold text-base sm:text-lg leading-tight truncate">${locationName}</h3>
+                                <h3 class="font-bold text-sm sm:text-lg leading-tight truncate">${locationName}</h3>
                                 <p class="text-xs sm:text-sm opacity-90 truncate">${weatherDesc}</p>
                             </div>
                         </div>
@@ -738,42 +734,42 @@
                     </div>
 
                     <!-- Stats Grid -->
-                    <div class="p-2 sm:p-3 border-b border-gray-100">
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded p-2 sm:p-3 border border-orange-200">
+                    <div class="p-1.5 sm:p-3 border-b border-gray-100">
+                        <div class="grid grid-cols-2 gap-1.5 sm:gap-2">
+                            <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded p-1.5 sm:p-3 border border-orange-200">
                                 <div class="text-xs font-medium text-orange-700">🌡️ TEMP</div>
-                                <div class="text-lg sm:text-2xl font-bold text-orange-900">${temp}°C</div>
+                                <div class="text-base sm:text-2xl font-bold text-orange-900">${temp}°C</div>
                                 <div class="text-xs text-orange-600 truncate">Feels ${feelsLike}°</div>
                             </div>
 
-                            <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded p-2 sm:p-3 border border-blue-200">
+                            <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded p-1.5 sm:p-3 border border-blue-200">
                                 <div class="text-xs font-medium text-blue-700">🌧️ RAIN</div>
-                                <div class="text-lg sm:text-2xl font-bold text-blue-900">${next24Hours[0]?.rainChance || 0}%</div>
+                                <div class="text-base sm:text-2xl font-bold text-blue-900">${next24Hours[0]?.rainChance || 0}%</div>
                                 <div class="text-xs text-blue-600 truncate">${(next24Hours[0]?.rainAmount || 0).toFixed(1)} mm</div>
                             </div>
 
-                            <div class="bg-gradient-to-br from-teal-50 to-emerald-50 rounded p-2 sm:p-3 border border-teal-200">
+                            <div class="bg-gradient-to-br from-teal-50 to-emerald-50 rounded p-1.5 sm:p-3 border border-teal-200">
                                 <div class="text-xs font-medium text-teal-700">🌪️ WIND</div>
-                                <div class="text-lg sm:text-2xl font-bold text-teal-900">${windSpeed.toFixed(1)}</div>
+                                <div class="text-base sm:text-2xl font-bold text-teal-900">${windSpeed.toFixed(1)}</div>
                                 <div class="text-xs text-teal-600 truncate">m/s · ${getCardinalDirection(windDir)}</div>
                             </div>
 
-                            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded p-2 sm:p-3 border border-purple-200">
+                            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded p-1.5 sm:p-3 border border-purple-200">
                                 <div class="text-xs font-medium text-purple-700">💧 HUMID</div>
-                                <div class="text-lg sm:text-2xl font-bold text-purple-900">${humidity}%</div>
+                                <div class="text-base sm:text-2xl font-bold text-purple-900">${humidity}%</div>
                                 <div class="text-xs text-purple-600 truncate">${pressure.toFixed(0)} hPa</div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Hourly Forecast -->
-                    <div class="p-2 sm:p-3">
-                        <h4 class="text-xs font-semibold text-gray-600 mb-2">Next 18 Hours</h4>
+                    <div class="p-1.5 sm:p-3">
+                        <h4 class="text-xs font-semibold text-gray-600 mb-1.5 sm:mb-2">Next 18 Hours</h4>
                         <div class="space-y-1">
-                            ${next24Hours.map(hour => `
-                                <div class="flex items-center justify-between p-1.5 sm:p-2 rounded bg-gray-50 hover:bg-gray-100">
+                            ${next24Hours.map((hour, index) => `
+                                <div class="${index >= 4 ? 'hidden sm:flex' : 'flex'} items-center justify-between p-1.5 sm:p-2 rounded bg-gray-50 hover:bg-gray-100">
                                     <div class="flex items-center gap-2 flex-1 min-w-0">
-                                        <span class="text-lg sm:text-xl flex-shrink-0">${hour.icon}</span>
+                                        <span class="text-base sm:text-xl flex-shrink-0">${hour.icon}</span>
                                         <div class="text-xs sm:text-sm font-medium truncate">${hour.time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
                                     </div>
                                     <div class="flex items-center gap-2 flex-shrink-0">
@@ -786,7 +782,7 @@
                     </div>
 
                     <!-- Footer -->
-                    <div class="p-2 sm:p-3 bg-gray-50 border-t border-gray-200">
+                    <div class="p-1.5 sm:p-3 bg-gray-50 border-t border-gray-200">
                         <div class="text-xs text-gray-500 text-center">
                             Updated: ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                         </div>

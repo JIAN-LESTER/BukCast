@@ -1,15 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" x-data="{
-        darkMode: localStorage.getItem('theme')
-            ? localStorage.getItem('theme') === 'dark'
-            : window.matchMedia('(prefers-color-scheme: dark)').matches
-    }" x-init="
-        $watch('darkMode', val => {
-            localStorage.setItem('theme', val ? 'dark' : 'light');
-            document.documentElement.classList.toggle('dark', val);
-        });
-        document.documentElement.classList.toggle('dark', darkMode);
-    " :class="{ 'dark': darkMode }">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -26,6 +16,7 @@
             display: none !important;
         }
     </style>
+    @stack('styles')
 </head>
 
 
@@ -45,9 +36,18 @@
         if (isMobile) {
             sidebarOpen = false;
         }
-    " class="flex h-screen bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 overflow-hidden">
+    " class="flex h-screen bg-slate-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden">
 
-    <?php $user = Auth::user(); ?>
+    <?php
+        $user = Auth::user() ?: (object) [
+            'fname' => 'User',
+            'lname' => '',
+            'name' => 'User',
+            'email' => '',
+            'role' => 'user',
+            'isCompleted' => true,
+        ];
+    ?>
 
     <!-- Backdrop overlay for mobile -->
     <div x-show="sidebarOpen && isMobile" x-cloak @click="sidebarOpen = false"
@@ -61,16 +61,20 @@
         x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
         x-transition:leave="transition-transform ease-in duration-300" x-transition:leave-start="translate-x-0"
         x-transition:leave-end="-translate-x-full" @click.away="if (isMobile) sidebarOpen = false"
-        class="fixed lg:relative inset-y-0 left-0 z-50 w-60 bg-gray-800 text-white dark:bg-white dark:text-gray-800 shadow-md flex flex-col">
+        class="fixed lg:relative inset-y-0 left-0 z-50 w-56 bg-white text-gray-700 dark:bg-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
 
-        <div class="p-4 font-bold text-white dark:text-gray-800 text-lg">
-            <span>BukCast</span>
+        <div class="px-5 py-5 border-b border-gray-100 dark:border-gray-800">
+            <div class="font-bold text-gray-900 dark:text-white text-lg leading-tight">BukCast</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Weather monitoring</div>
         </div>
 
-        <nav class="flex-1 px-2 space-y-2 overflow-y-auto">
-            @if(auth()->user()->role === 'admin')
+        <nav class="px-3 py-4 space-y-1 overflow-y-auto">
+            <div class="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                Menu
+            </div>
+            @if(false)
                 <a href="{{ route('admin.dashboard') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('admin.dashboard') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                    class="flex items-center space-x-2 px-4 py-2 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('admin.dashboard') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -79,8 +83,8 @@
                     <span>Dashboard</span>
                 </a>
             @else
-                <a href="{{ route('user.dashboard') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('user.dashboard') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                <a href="{{ route('dashboard') }}" @click="if (isMobile) sidebarOpen = false"
+                    class="flex items-center space-x-3 px-3 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded-lg {{ request()->routeIs('dashboard') || request()->routeIs('home') || request()->routeIs('user.dashboard') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -90,31 +94,29 @@
                 </a>
             @endif
 
-            @if(auth()->user()->role === 'admin')
-                <a href="{{ route('map.show') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('map.show') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                    </svg>
-                    <span>Maps</span>
-                </a>
-            @else
-                <a href="{{ route('user.map.show') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('user.map.show') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                    </svg>
-                    <span>Maps</span>
-                </a>
-            @endif
+            <a href="{{ route('user.map.show') }}" @click="if (isMobile) sidebarOpen = false"
+                class="flex items-center space-x-3 px-3 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded-lg {{ request()->routeIs('user.map.show') || request()->routeIs('map.show') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                <span>Maps</span>
+            </a>
 
-            @if(auth()->user()->role === 'admin')
+            <a href="{{ route('user.weather_reports.show') }}" @click="if (isMobile) sidebarOpen = false"
+                class="flex items-center space-x-3 px-3 py-2.5 text-sm font-medium hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded-lg {{ request()->routeIs('user.weather_reports.show') || request()->routeIs('weather_reports.show') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                    </svg>
+                    <span>Weather Reports</span>
+                </a>
+
+            @if(false)
                 <a href="{{ route('weather_reports.show') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('weather_reports.show') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                    class="flex items-center space-x-2 px-4 py-2 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('weather_reports.show') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -122,9 +124,9 @@
                     </svg>
                     <span>Weather Reports</span>
                 </a>
-            @else
+            @elseif(false)
                 <a href="{{ route('user.weather_reports.show') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('user.weather_reports.show') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                    class="flex items-center space-x-2 px-4 py-2 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('user.weather_reports.show') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -134,9 +136,9 @@
                 </a>
             @endif
 
-            @if(auth()->user()->role === 'admin')
+            @if(false)
                 <a href="{{ route('admin.user_management') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('admin.user_management') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                    class="flex items-center space-x-2 px-4 py-2 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('admin.user_management') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -146,7 +148,7 @@
                 </a>
 
                 <a href="{{ route('logs.show') }}" @click="if (isMobile) sidebarOpen = false"
-                    class="flex items-center space-x-2 px-4 py-2 dark:text-gray-800 hover:bg-white hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('logs.show') ? 'bg-white text-gray-800 dark:bg-gray-800 dark:text-white' : '' }}">
+                    class="flex items-center space-x-2 px-4 py-2 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white rounded {{ request()->routeIs('logs.show') ? 'bg-blue-50 text-blue-700 dark:bg-gray-800 dark:text-white' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -162,10 +164,10 @@
     <div class="flex-1 @yield('fullscreen', 'flex flex-col') w-full overflow-hidden transition-all duration-300">
         <!-- Header -->
         <header
-            class="@yield('header-class', 'relative') bg-white text-gray-800 p-4 flex justify-between items-center shadow-sm dark:bg-gray-800 dark:text-white z-30">
+            class="@yield('header-class', 'relative') bg-white text-gray-800 p-4 flex justify-between items-center shadow-sm border-b border-gray-200 dark:bg-gray-900 dark:text-white dark:border-gray-800 z-30">
             <div class="flex items-center space-x-3">
                 <button @click="sidebarOpen = !sidebarOpen"
-                    class="p-2 rounded hover:bg-gray-800 hover:text-white dark:hover:bg-white dark:hover:text-gray-800 focus:outline-none transition-colors">
+                    class="p-2 rounded hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white focus:outline-none transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -175,23 +177,24 @@
                 <h1 class="text-lg font-semibold truncate">@yield('header', 'Page')</h1>
             </div>
 
+            @if(Auth::check())
             <div x-data="{ profileOpen: false }" class="relative">
                 <button @click="profileOpen = !profileOpen" class="flex items-center space-x-2 focus:outline-none px-3 py-2 rounded transition-colors 
-                           hover:bg-gray-700 hover:text-white">
+                           hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-gray-800 dark:hover:text-white">
                     <div class="flex items-center space-x-2">
                         <div class="relative">
                             <div
-                                class="w-8 h-8 bg-gray-800 text-white dark:bg-white dark:text-gray-800 rounded-full flex items-center justify-center font-semibold transition-colors duration-200">
-                                {{ strtoupper(substr(Auth::user()->fname ?? Auth::user()->name ?? 'U', 0, 1)) }}
+                                class="w-8 h-8 bg-blue-600 text-white dark:bg-white dark:text-gray-800 rounded-full flex items-center justify-center font-semibold transition-colors duration-200">
+                                {{ strtoupper(substr($user->fname ?? $user->name ?? 'U', 0, 1)) }}
                             </div>
 
-                            @if(!Auth::user()->isCompleted)
+                            @if(!$user->isCompleted)
                                 <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white">
                                 </div>
                             @endif
                         </div>
-                        <span class="hidden md:block">{{ Auth::user()->fname ?? Auth::user()->name }}</span>
-                        @if(!Auth::user()->isCompleted)
+                        <span class="hidden md:block">{{ $user->fname ?? $user->name }}</span>
+                        @if(!$user->isCompleted)
                             <span class="hidden lg:block text-xs bg-red-500 px-2 py-1 rounded-full">Incomplete</span>
                         @endif
                     </div>
@@ -209,12 +212,12 @@
 
                     <div class="px-4 py-3 border-b border-gray-200">
                         <p class="text-sm font-medium text-gray-900">
-                            {{ Auth::user()->fname }} {{ Auth::user()->lname }}
+                            {{ $user->fname }} {{ $user->lname }}
                         </p>
                         <p class="text-sm text-gray-500 truncate">
-                            {{ Auth::user()->email }}
+                            {{ $user->email }}
                         </p>
-                        @if(!Auth::user()->isCompleted)
+                        @if(!$user->isCompleted)
                             <p class="text-xs text-red-600 mt-1">
                                 Profile incomplete
                             </p>
@@ -222,7 +225,7 @@
                     </div>
 
                     <div class="py-1">
-                        @if(!Auth::user()->isCompleted)
+                        @if(!$user->isCompleted)
                             <button
                                 onclick="openCompleteProfileModal(); document.querySelector('[x-data]').__x.$data.profileOpen = false"
                                 class="flex items-center w-full px-4 py-2 text-sm text-white bg-red-500 hover:bg-red-600">
@@ -274,15 +277,20 @@
                     </div>
                 </div>
             </div>
+            @else
+                <div class="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300">
+                    User
+                </div>
+            @endif
         </header>
 
-        <main class="@yield('main-class', 'flex-1 overflow-y-auto p-4 dark:bg-gray-200 ')">
+        <main class="@yield('main-class', 'flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-gray-900 ')">
             @yield('content')
         </main>
     </div>
 
 
-    @if(!Auth::user()->isCompleted)
+    @if(!$user->isCompleted)
         <div id="completeProfileModal" class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
 
             <div class="absolute inset-0 "></div>
@@ -314,7 +322,7 @@
                             <label for="complete_fname"
                                 class="block text-sm font-medium text-gray-700  dark:text-gray-300">First Name <span
                                     class="text-red-500">*</span></label>
-                            <input type="text" name="fname" id="complete_fname" value="{{ Auth::user()->fname }}" 
+                            <input type="text" name="fname" id="complete_fname" value="{{ $user->fname }}" 
                                 class="mt-2 block w-full rounded-xl border-gray-300 bg-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 px-4 py-3 focus:ring-2 focus:ring-red-500 focus:border-red-500">
                             @error('complete_fname')
                                 <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
@@ -324,7 +332,7 @@
                             <label for="complete_lname"
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Last Name <span
                                     class="text-red-500">*</span></label>
-                            <input type="text" name="lname" id="complete_lname" value="{{ Auth::user()->lname }}" 
+                            <input type="text" name="lname" id="complete_lname" value="{{ $user->lname }}" 
                                 class="mt-2 block w-full rounded-xl border-gray-300 bg-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 px-4 py-3 focus:ring-2 focus:ring-red-500 focus:border-red-500">
                             @error('complete_lname')
                                 <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
@@ -335,7 +343,7 @@
                     <div>
                         <label for="complete_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email
                             Address <span class="text-red-500">*</span></label>
-                        <input type="email" name="email" id="complete_email" value="{{ Auth::user()->email }}" 
+                        <input type="email" name="email" id="complete_email" value="{{ $user->email }}" 
                             class="mt-2 block w-full rounded-xl border-gray-300 bg-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 px-4 py-3 focus:ring-2 focus:ring-red-500 focus:border-red-500">
                         @error('complete_email')
                             <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
@@ -401,15 +409,15 @@
             <div class="p-6 space-y-5">
                 <div>
                     <p class="text-sm text-gray-500 dark:text-gray-400">First Name</p>
-                    <p class="text-base font-medium text-gray-800 dark:text-gray-100">{{ auth()->user()->fname }}</p>
+                    <p class="text-base font-medium text-gray-800 dark:text-gray-100">{{ $user->fname }}</p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-500 dark:text-gray-400">Last Name</p>
-                    <p class="text-base font-medium text-gray-800 dark:text-gray-100">{{ auth()->user()->lname }}</p>
+                    <p class="text-base font-medium text-gray-800 dark:text-gray-100">{{ $user->lname }}</p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-500 dark:text-gray-400">Email</p>
-                    <p class="text-base font-medium text-gray-800 dark:text-gray-100">{{ auth()->user()->email }}</p>
+                    <p class="text-base font-medium text-gray-800 dark:text-gray-100">{{ $user->email }}</p>
                 </div>
             </div>
 
@@ -440,7 +448,7 @@
                     <div>
                         <label for="fname" class="block text-sm font-medium text-gray-700 dark:text-gray-200">First
                             Name</label>
-                        <input type="text" name="fname" id="fname" value="{{ auth()->user()->fname }}"
+                        <input type="text" name="fname" id="fname" value="{{ $user->fname }}"
                             class="mt-2 block w-full rounded-xl border-gray-300 bg-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 px-4 py-3 focus:ring-gray-800 focus:border-gray-800">
                         @error('fname')
                             <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
@@ -449,7 +457,7 @@
                     <div>
                         <label for="lname" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Last
                             Name</label>
-                        <input type="text" name="lname" id="lname" value="{{ auth()->user()->lname }}"
+                        <input type="text" name="lname" id="lname" value="{{ $user->lname }}"
                             class="mt-2 block w-full rounded-xl border-gray-300 bg-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 px-4 py-3 focus:ring-gray-800 focus:border-gray-800">
                         @error('lname')
                             <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
@@ -459,7 +467,7 @@
 
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Email</label>
-                    <input type="email" name="email" id="email" value="{{ auth()->user()->email }}"
+                    <input type="email" name="email" id="email" value="{{ $user->email }}"
                         class="mt-2 block w-full rounded-xl border-gray-300 bg-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 px-4 py-3 focus:ring-gray-800 focus:border-gray-800">
                     @error('email')
                         <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
@@ -544,7 +552,7 @@
         document.addEventListener("DOMContentLoaded", function () {
             @if(session('showProfileModal'))
                 openEditProfileModal();
-            @elseif(!Auth::user()->isCompleted)
+            @elseif(!$user->isCompleted)
                 setTimeout(function () {
                     openCompleteProfileModal();
                 }, 1000);
@@ -555,13 +563,13 @@
             if (event.key === 'Escape') {
                 closeProfileModal();
                 closeEditProfileModal();
-                @if(Auth::user()->isCompleted)
+                @if($user->isCompleted)
                     closeCompleteProfileModal();
                 @endif
             }
         });
 
-        @if(!Auth::user()->isCompleted)
+        @if(!$user->isCompleted)
             document.addEventListener('click', function (event) {
                 const modal = document.getElementById('completeProfileModal');
                 if (modal && event.target === modal) {

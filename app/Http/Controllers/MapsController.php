@@ -10,8 +10,8 @@ class MapsController extends Controller
     public function show()
     {
 
-        $locations = auth()->user()->role === 'admin' ? Location::all() : Location::where('userID', auth()->id())->get();
-        return view('admin.maps_management', [
+        $locations = Location::all();
+        return view('user.maps', [
             'googleKey' => config('services.google_maps.key'),
             'openweatherKey' => config('services.openweather.key'),
             'locations' => $locations,
@@ -21,7 +21,7 @@ class MapsController extends Controller
     public function viewMaps(Request $request)
     {
 
-         $locations = auth()->user()->role === 'user' ? Location::all() : Location::where('userID', auth()->id())->get();
+         $locations = Location::all();
         return view('user.maps', [
             'googleKey' => config('services.google_maps.key'),
             'openweatherKey' => config('services.openweather.key'),

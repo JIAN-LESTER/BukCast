@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Location;
 use App\Models\Snapshot;
 use App\Models\WeatherReport;
+use App\Support\OpenWeatherClient;
 use Cache;
-use Http;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -23,9 +23,10 @@ class WeatherController extends Controller
         $cacheKey = 'weather:' . round($lat, 4) . ':' . round($lon, 4);
 
         $data = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($lat, $lon) {
-            $apiKey = config('services.openweather.key');
-            $url = "https://api.openweathermap.org/data/2.5/weather?lat={$lat}&lon={$lon}&units=metric&appid={$apiKey}";
-            $resp = Http::timeout(10)->get($url);
+            $resp = OpenWeatherClient::get('weather', [
+                'lat' => $lat,
+                'lon' => $lon,
+            ], 10);
 
             if ($resp->failed()) {
                 return ['error' => 'failed_fetch'];
@@ -49,14 +50,10 @@ class WeatherController extends Controller
 
         try {
             $data = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($lat, $lon) {
-                $apiKey = config('services.openweather.key');
-
-                if (!$apiKey) {
-                    throw new \Exception('OpenWeatherMap API key not configured');
-                }
-
-                $url = "https://api.openweathermap.org/data/2.5/weather?lat={$lat}&lon={$lon}&units=metric&appid={$apiKey}";
-                $response = Http::timeout(15)->get($url);
+                $response = OpenWeatherClient::get('weather', [
+                    'lat' => $lat,
+                    'lon' => $lon,
+                ]);
 
                 if ($response->failed()) {
                     throw new \Exception('Failed to fetch current weather: HTTP ' . $response->status());
@@ -94,15 +91,10 @@ class WeatherController extends Controller
 
         try {
             $data = Cache::remember($cacheKey, now()->addMinutes(15), function () use ($lat, $lon) {
-                $apiKey = config('services.openweather.key');
-
-                if (!$apiKey) {
-                    throw new \Exception('OpenWeatherMap API key not configured');
-                }
-
-                $url = "https://api.openweathermap.org/data/2.5/forecast?lat={$lat}&lon={$lon}&units=metric&appid={$apiKey}";
-
-                $response = Http::timeout(15)->get($url);
+                $response = OpenWeatherClient::get('forecast', [
+                    'lat' => $lat,
+                    'lon' => $lon,
+                ]);
 
                 if ($response->failed()) {
                     throw new \Exception('Failed to fetch forecast data: HTTP ' . $response->status());
