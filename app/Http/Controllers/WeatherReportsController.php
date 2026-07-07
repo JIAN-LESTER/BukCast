@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Location;
 use App\Models\WeatherReport;
 use App\Models\Snapshot;
+use App\Support\OpenWeatherClient;
+use Database\Seeders\BukidnonLocationsSeeder;
 
 class WeatherReportsController extends Controller
 {
@@ -132,6 +134,8 @@ class WeatherReportsController extends Controller
     {
         try {
             \Log::info('Manual forecast storage triggered');
+
+            app(BukidnonLocationsSeeder::class)->run();
             
             // Get all locations
             $locations = Location::all();
@@ -195,19 +199,9 @@ class WeatherReportsController extends Controller
 
     private function fetchForecastData($latitude, $longitude)
     {
-        $apiKey = config('services.openweather.key');
-        
-        if (!$apiKey) {
-            throw new \Exception('OpenWeatherMap API key not configured');
-        }
-
-        $url = "https://api.openweathermap.org/data/2.5/forecast";
-        
-        $response = \Http::timeout(15)->get($url, [
+        $response = OpenWeatherClient::get('forecast', [
             'lat' => $latitude,
             'lon' => $longitude,
-            'units' => 'metric',
-            'appid' => $apiKey
         ]);
 
         if ($response->failed()) {
@@ -491,13 +485,12 @@ public function refreshAll(Request $request)
         $deletedSnapshots = Snapshot::count();
         $deletedReports = WeatherReport::count();
         
-        // Delete with foreign key constraints handled properly
-        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        Snapshot::truncate();
-        WeatherReport::truncate();
-        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        Snapshot::query()->delete();
+        WeatherReport::query()->delete();
         
         \Log::info("Deleted {$deletedReports} weather reports and {$deletedSnapshots} snapshots");
+
+        app(BukidnonLocationsSeeder::class)->run();
         
         // Step 2: Get all locations
         $locations = Location::all();
@@ -560,13 +553,6 @@ public function refreshAll(Request $request)
 
     } catch (\Exception $e) {
         \Log::error('Refresh all data error: ' . $e->getMessage());
-        
-        // Re-enable foreign key checks in case of error
-        try {
-            \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-        } catch (\Exception $fkException) {
-            \Log::error('Failed to re-enable foreign key checks: ' . $fkException->getMessage());
-        }
         
         return response()->json([
             'success' => false,
