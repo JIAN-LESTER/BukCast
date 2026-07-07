@@ -21,7 +21,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: sh -c "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
 
   vite:
     image: node:22-alpine
