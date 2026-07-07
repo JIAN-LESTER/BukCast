@@ -14,40 +14,34 @@
     use Illuminate\Support\Facades\Route;
     use App\Http\Controllers\MapsController;
 
-    Route::get('/', [AuthController::class, 'showLoginForm'])->name('home');
-    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('loginForm');
+    Route::get('/', [DashboardController::class, 'viewDashboard'])->name('home');
+    Route::get('/login', fn () => redirect()->route('dashboard'))->name('loginForm');
     Route::post('/login', [AuthController::class, 'login'])->name('login');
-    Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('registerForm');
+    Route::get('/register', fn () => redirect()->route('dashboard'))->name('registerForm');
     Route::post('/register', [AuthController::class, 'register'])->name('register');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
     Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
-    Route::get('/admin/dashboard', [DashboardController::class, 'viewAdminDashboard'])->name('admin.dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'viewDashboard'])->name('dashboard');
+    Route::get('/reports-maps', [WeatherReportsController::class, 'viewReportsAndMaps'])->name('reports_maps.show');
+    Route::get('/admin/dashboard', fn () => redirect()->route('dashboard'))->name('admin.dashboard');
 
-    Route::get('/user/dashboard', function () {
-        return view('user.dashboard');
-    })->name('user.dashboard');
+    Route::get('/user/dashboard', [DashboardController::class, 'viewDashboard'])->name('user.dashboard');
 
 
     Route::middleware(['auth'])->group(function () {
         Route::get('/map', [MapsController::class, 'show'])->name('map.show');
         Route::get('/weather_reports', [WeatherReportsController::class, 'viewWeatherReports'])->name('weather_reports.show');
-        Route::get('/logs', [LogsController::class, 'viewLogs'])->name('logs.show');
-        Route::get('/user-management', [UserManagementController::class, 'viewUsers'])->name('admin.user_management');
+        Route::get('/weather-reports', [WeatherReportsController::class, 'viewWeatherReports']);
 
-        Route::get('/user/map', [MapsController::class, 'viewMaps'])->name('user.map.show');
-        Route::get('/user/weather_reports', [WeatherReportsController::class, 'viewUserWeatherReports'])->name('user.weather_reports.show');
+        Route::get('/user/map', [MapsController::class, 'show'])->name('user.map.show');
+        Route::get('/user/weather_reports', [WeatherReportsController::class, 'viewWeatherReports'])->name('user.weather_reports.show');
     });
 
     Route::prefix('admin/user_crud')->name('admin.')->group(function () {
-        Route::get('/create', [UserManagementController::class, 'create'])->name('users-create');
-        Route::post('/store', [UserManagementController::class, 'store'])->name('users-store');
-        Route::get('/show/{id}', [UserManagementController::class, 'show'])->name('show');
-        Route::get('/edit/{id}', [UserManagementController::class, 'edit'])->name('users-edit');
-        Route::put('/update/{id}', [UserManagementController::class, 'update'])->name('update');
-        Route::delete('/destroy/{id}', [UserManagementController::class, 'destroy'])->name('users-destroy');
+        Route::fallback(fn () => redirect()->route('dashboard'));
     });
 
     Route::middleware(['auth'])->group(function () {
