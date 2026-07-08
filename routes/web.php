@@ -1,28 +1,16 @@
     <?php
 
     use App\Http\Controllers\AlertController;
-    use App\Http\Controllers\AuthController;
     use App\Http\Controllers\DashboardController;
-    use App\Http\Controllers\EmailVerificationController;
-    use App\Http\Controllers\LogsController;
     use App\Http\Controllers\ProfileController;
 
-    use App\Http\Controllers\TwoFactorAuthController;
-    use App\Http\Controllers\UserManagementController;
     use App\Http\Controllers\WeatherController;
     use App\Http\Controllers\WeatherReportsController;
     use Illuminate\Support\Facades\Route;
     use App\Http\Controllers\MapsController;
 
     Route::get('/', [DashboardController::class, 'viewDashboard'])->name('home');
-    Route::get('/login', fn () => redirect()->route('dashboard'))->name('loginForm');
-    Route::post('/login', [AuthController::class, 'login'])->name('login');
-    Route::get('/register', fn () => redirect()->route('dashboard'))->name('registerForm');
-    Route::post('/register', [AuthController::class, 'register'])->name('register');
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
-    Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
     Route::get('/dashboard', [DashboardController::class, 'viewDashboard'])->name('dashboard');
     Route::get('/admin/dashboard', fn () => redirect()->route('dashboard'))->name('admin.dashboard');
