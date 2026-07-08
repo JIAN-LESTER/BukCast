@@ -9,6 +9,8 @@ RUN apt-get update \
         libpq-dev \
         libzip-dev \
         unzip \
+        nodejs \
+        npm \
     && docker-php-ext-install bcmath pdo_pgsql pgsql zip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -16,11 +18,16 @@ RUN apt-get update \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY composer.json composer.lock ./
-RUN composer install --no-interaction --prefer-dist --no-scripts
+RUN composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader --no-scripts
+
+COPY package.json package-lock.json ./
+RUN npm install
 
 COPY . .
-RUN composer dump-autoload --no-interaction
 
-EXPOSE 8000
+RUN npm run build
+RUN composer dump-autoload --no-interaction --optimize
+
+EXPOSE 10000
 
 CMD ["sh", "docker-entrypoint.sh"]
