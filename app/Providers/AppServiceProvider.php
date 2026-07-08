@@ -20,7 +20,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if ($this->app->environment('production')) {
+        $host = request()->getHost();
+
+        if ($this->app->environment('production') || str_ends_with($host, '.onrender.com')) {
             URL::forceScheme('https');
         }
     }
