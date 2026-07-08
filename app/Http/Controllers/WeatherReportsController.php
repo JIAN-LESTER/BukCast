@@ -16,6 +16,9 @@ class WeatherReportsController extends Controller
      */
     public function viewWeatherReports()
     {
+        WeatherReport::removeDuplicateRows();
+        Snapshot::removeDuplicateRows();
+
         // Load all snapshots for the scrollable report list
         $snapshots = Snapshot::with(['weatherReport.location'])
             ->orderBy('created_at', 'asc')
@@ -35,6 +38,9 @@ class WeatherReportsController extends Controller
      */
     public function viewUserWeatherReports($locID = null)
     {
+        WeatherReport::removeDuplicateRows();
+        Snapshot::removeDuplicateRows();
+
         if ($locID) {
             $snapshots = Snapshot::whereHas('weatherReport', function ($q) use ($locID) {
                 $q->where('locID', $locID);
@@ -68,6 +74,9 @@ class WeatherReportsController extends Controller
      */
     private function getTodaySnapshotsByPeriod()
     {
+        WeatherReport::removeDuplicateRows();
+        Snapshot::removeDuplicateRows();
+
         $today = now()->toDateString();
         $snapshots = Snapshot::whereHas('weatherReport', function ($q) use ($today) {
             $q->where('report_date', $today);
@@ -230,12 +239,7 @@ class WeatherReportsController extends Controller
         $timeSlots = $this->processForecastData($forecastData);
 
         // Get or create today's weather report
-        $weatherReport = WeatherReport::firstOrCreate(
-            [
-                'locID' => $location->locID,
-                'report_date' => now()->toDateString()
-            ]
-        );
+        $weatherReport = WeatherReport::forLocationAndDate($location->locID, now()->toDateString());
 
         // Prepare snapshot data
         $snapshotData = [
@@ -257,6 +261,7 @@ class WeatherReportsController extends Controller
         ];
 
         // Check for existing snapshot for today
+        Snapshot::removeDuplicateRows($weatherReport->wrID);
         $existingSnapshot = Snapshot::where('wrID', $weatherReport->wrID)->first();
 
         if ($existingSnapshot) {

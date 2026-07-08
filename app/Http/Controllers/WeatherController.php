@@ -203,6 +203,7 @@ class WeatherController extends Controller
             ];
 
             // Check for existing snapshot for today
+            Snapshot::removeDuplicateRows($weatherReport->wrID);
             $existingSnapshot = Snapshot::where('wrID', $weatherReport->wrID)->first();
 
             if ($existingSnapshot) {
@@ -678,12 +679,7 @@ class WeatherController extends Controller
     {
         $today = now()->toDateString();
 
-        return WeatherReport::firstOrCreate(
-            [
-                'locID' => $locID,
-                'report_date' => $today
-            ]
-        );
+        return WeatherReport::forLocationAndDate($locID, $today);
     }
 
     private function calculateStormStatus($rain_amount, $rain_chance = null)

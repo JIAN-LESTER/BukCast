@@ -30,6 +30,58 @@ class Snapshot extends Model
         return $this->belongsTo(WeatherReport::class, 'wrID', 'wrID');
     }
 
+    public static function removeDuplicateRows(?int $wrID = null): int
+    {
+        $query = static::query()
+            ->select('wrID')
+            ->whereNotNull('wrID')
+            ->groupBy('wrID')
+            ->havingRaw('COUNT(*) > 1');
+
+        if ($wrID) {
+            $query->where('wrID', $wrID);
+        }
+
+        $deleted = 0;
+
+        foreach ($query->pluck('wrID') as $duplicateWrID) {
+            $deleted += static::mergeRowsForReport((int) $duplicateWrID);
+        }
+
+        return $deleted;
+    }
+
+    public static function mergeRowsForReport(int $wrID): int
+    {
+        $snapshots = static::where('wrID', $wrID)
+            ->orderBy('snapshotID')
+            ->get();
+
+        if ($snapshots->count() <= 1) {
+            return 0;
+        }
+
+        $keeper = $snapshots->shift();
+        $mergedData = $keeper->snapshots ?? [];
+
+        foreach ($snapshots as $snapshot) {
+            foreach (($snapshot->snapshots ?? []) as $key => $data) {
+                $mergedKey = array_key_exists($key, $mergedData)
+                    ? $key . '_' . $snapshot->snapshotID
+                    : $key;
+
+                $mergedData[$mergedKey] = $data;
+            }
+        }
+
+        $keeper->update(['snapshots' => $mergedData]);
+
+        $duplicateIds = $snapshots->pluck('snapshotID');
+        static::whereIn('snapshotID', $duplicateIds)->delete();
+
+        return $duplicateIds->count();
+    }
+
     // Scope for today's snapshots
     public function scopeToday($query)
     {

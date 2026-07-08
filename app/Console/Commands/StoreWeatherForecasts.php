@@ -105,12 +105,7 @@ class StoreWeatherForecasts extends Command
         $timeSlots = $this->processForecastData($forecastData);
 
         // Get or create today's weather report
-        $weatherReport = WeatherReport::firstOrCreate(
-            [
-                'locID' => $location->locID,
-                'report_date' => now()->toDateString()
-            ]
-        );
+        $weatherReport = WeatherReport::forLocationAndDate($location->locID, now()->toDateString());
 
         // Prepare snapshot data
         $snapshotData = [
@@ -132,6 +127,7 @@ class StoreWeatherForecasts extends Command
         ];
 
         // Check for existing snapshot for today
+        Snapshot::removeDuplicateRows($weatherReport->wrID);
         $existingSnapshot = Snapshot::where('wrID', $weatherReport->wrID)->first();
 
         if ($existingSnapshot) {
