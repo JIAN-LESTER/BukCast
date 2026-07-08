@@ -13,7 +13,7 @@
                     <span>Live weather overview</span>
                 </div>
                 <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-                    Welcome, {{ auth()->user()->fname ?? 'User' }}
+                    Welcome to BukCast
                 </h1>
                 <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     Current conditions, forecast changes, and safety alerts in one place.
