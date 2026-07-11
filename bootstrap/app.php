@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('weather:store-forecasts --refresh')
             ->dailyAt('6:00')
             ->timezone('Asia/Manila')
+            ->withoutOverlapping()
             ->name('refresh-weather-forecasts');
     })
     ->withExceptions(function (Exceptions $exceptions): void {

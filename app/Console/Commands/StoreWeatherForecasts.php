@@ -22,7 +22,7 @@ class StoreWeatherForecasts extends Command
         app(BukidnonLocationsSeeder::class)->run();
 
         if ($this->option('refresh')) {
-            Snapshot::query()->delete();
+            // Snapshots are removed by the weather_reports foreign key cascade.
             WeatherReport::query()->delete();
             $this->info('Existing weather reports deleted.');
         }
@@ -111,7 +111,7 @@ class StoreWeatherForecasts extends Command
         $snapshotData = [
             'type' => 'forecast',
             'snapshot_type' => 'forecast_periods',
-            'snapshot_identifier' => 'auto_forecast_' . now()->format('His'),
+            'snapshot_identifier' => 'auto_forecast',
             'location' => [
                 'name' => $location->name,
                 'latitude' => $location->latitude,
@@ -126,27 +126,19 @@ class StoreWeatherForecasts extends Command
             ]
         ];
 
-        // Check for existing snapshot for today
+        // A scheduled forecast is the current forecast, not a history entry.
+        // Keep one row and one stable payload key even if the command is rerun.
         Snapshot::removeDuplicateRows($weatherReport->wrID);
         $existingSnapshot = Snapshot::where('wrID', $weatherReport->wrID)->first();
 
+        $attributes = ['snapshots' => ['auto_forecast' => $snapshotData]];
+
         if ($existingSnapshot) {
-            $existingData = $existingSnapshot->snapshots ?? [];
-            $forecastKey = 'auto_forecast_' . now()->format('His');
-            $existingData[$forecastKey] = $snapshotData;
-            
-            $existingSnapshot->update([
-                'snapshots' => $existingData
-            ]);
-        } else {
-            $forecastKey = 'auto_forecast_' . now()->format('His');
-            Snapshot::create([
-                'wrID' => $weatherReport->wrID,
-                'snapshots' => [
-                    $forecastKey => $snapshotData
-                ]
-            ]);
+            $existingSnapshot->update($attributes);
+            return;
         }
+
+        Snapshot::create(['wrID' => $weatherReport->wrID] + $attributes);
     }
 
     private function processForecastData($forecastData)
