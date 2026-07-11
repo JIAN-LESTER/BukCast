@@ -545,19 +545,17 @@ $hasWeatherReports = isset($snapshots) && !$snapshots->isEmpty();
                     'Content-Type': 'application/json',
                 },
             })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification(data.message, 'success');
-                    setTimeout(() => location.reload(), 2000);
-                } else {
-                    showNotification('Refresh failed: ' + data.message, 'error');
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-sync-alt text-xs"></i> Refresh';
-                }
+            .then(async r => {
+                const data = await r.json().catch(() => ({ message: 'The server returned an invalid response.' }));
+                if (!r.ok || !data.success) throw data;
+                return data;
             })
-            .catch(() => {
-                showNotification('An error occurred during refresh.', 'error');
+            .then(data => {
+                showNotification(data.message, 'success');
+                setTimeout(() => location.reload(), 2000);
+            })
+            .catch(error => {
+                showNotification(error.message || 'An error occurred during refresh.', 'error');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-sync-alt text-xs"></i> Refresh';
             });

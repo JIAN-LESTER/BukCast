@@ -8,6 +8,7 @@ use App\Models\WeatherReport;
 use App\Models\Snapshot;
 use App\Support\OpenWeatherClient;
 use Database\Seeders\BukidnonLocationsSeeder;
+use Illuminate\Support\Facades\Cache;
 
 class WeatherReportsController extends Controller
 {
@@ -143,55 +144,13 @@ class WeatherReportsController extends Controller
     {
         try {
             \Log::info('Manual forecast storage triggered');
-
-            $locations = $this->seedAndGetBukidnonLocations();
-            
-            if ($locations->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No locations found in database'
-                ], 404);
-            }
-
-            $successCount = 0;
-            $failCount = 0;
-            $errors = [];
-
-            foreach ($locations as $location) {
-                try {
-                    // Fetch forecast data
-                    $forecastData = $this->fetchForecastData($location->latitude, $location->longitude);
-                    
-                    if (!$forecastData) {
-                        $failCount++;
-                        $errors[] = "Failed to fetch forecast for {$location->name}";
-                        continue;
-                    }
-
-                    // Store the forecast
-                    $this->storeForecastForLocation($location, $forecastData);
-                    $successCount++;
-                    
-                } catch (\Exception $e) {
-                    $failCount++;
-                    $errors[] = "{$location->name}: {$e->getMessage()}";
-                    \Log::error("Forecast storage error for location {$location->locID}", [
-                        'location' => $location->name,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
+            $result = $this->retrieveForecasts();
 
             return response()->json([
-                'success' => true,
-                'message' => "Forecasts stored: {$successCount} successful, {$failCount} failed",
-                'details' => [
-                    'total_locations' => $locations->count(),
-                    'successful' => $successCount,
-                    'failed' => $failCount,
-                    'errors' => $errors
-                ]
-            ]);
+                'success' => $result['successful'] > 0,
+                'message' => "Forecasts stored: {$result['successful']} successful, {$result['failed']} failed",
+                'details' => $result,
+            ], $result['successful'] > 0 ? 200 : 502);
 
         } catch (\Exception $e) {
             \Log::error('Manual forecast storage error: ' . $e->getMessage());
@@ -201,6 +160,47 @@ class WeatherReportsController extends Controller
                 'message' => 'Failed to store forecasts: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /** Retrieve and persist a fresh forecast for every Bukidnon location. */
+    private function retrieveForecasts(): array
+    {
+        $locations = $this->seedAndGetBukidnonLocations();
+
+        if ($locations->isEmpty()) {
+            throw new \RuntimeException('No locations found in database');
+        }
+
+        $result = [
+            'total_locations' => $locations->count(),
+            'successful' => 0,
+            'failed' => 0,
+            'errors' => [],
+        ];
+
+        foreach ($locations as $location) {
+            try {
+                $forecastData = $this->fetchForecastData($location->latitude, $location->longitude);
+
+                if (!$forecastData) {
+                    $result['failed']++;
+                    $result['errors'][] = "Failed to fetch forecast for {$location->name}";
+                    continue;
+                }
+
+                $this->storeForecastForLocation($location, $forecastData);
+                $result['successful']++;
+            } catch (\Exception $e) {
+                $result['failed']++;
+                $result['errors'][] = "{$location->name}: {$e->getMessage()}";
+                \Log::error("Forecast storage error for location {$location->locID}", [
+                    'location' => $location->name,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $result;
     }
 
     private function seedAndGetBukidnonLocations()
@@ -260,20 +260,15 @@ class WeatherReportsController extends Controller
             ]
         ];
 
-        // Check for existing snapshot for today
+        // Keep a single current payload so manual retrieval actually replaces
+        // the values shown in the reports instead of appending stale entries.
         Snapshot::removeDuplicateRows($weatherReport->wrID);
         $existingSnapshot = Snapshot::where('wrID', $weatherReport->wrID)->first();
+        $forecastKey = 'manual_forecast';
 
         if ($existingSnapshot) {
-            $existingData = $existingSnapshot->snapshots ?? [];
-            $forecastKey = 'instant_forecast_' . now()->format('His');
-            $existingData[$forecastKey] = $snapshotData;
-            
-            $existingSnapshot->update([
-                'snapshots' => $existingData
-            ]);
+            $existingSnapshot->update(['snapshots' => [$forecastKey => $snapshotData]]);
         } else {
-            $forecastKey = 'instant_forecast_' . now()->format('His');
             Snapshot::create([
                 'wrID' => $weatherReport->wrID,
                 'snapshots' => [
@@ -489,72 +484,40 @@ public function refreshAll(Request $request)
 {
     try {
         \Log::info('Refresh all data triggered');
-        
-        // Step 1: Count existing data before deletion
-        $deletedSnapshots = Snapshot::count();
-        $deletedReports = WeatherReport::count();
-        
-        Snapshot::query()->delete();
-        WeatherReport::query()->delete();
-        
-        \Log::info("Deleted {$deletedReports} weather reports and {$deletedSnapshots} snapshots");
+        $cooldownKey = 'weather-reports:manual-refresh-at';
+        $lastRefresh = Cache::get($cooldownKey);
 
-        $locations = $this->seedAndGetBukidnonLocations();
-        
-        if ($locations->isEmpty()) {
+        if ($lastRefresh && now()->diffInSeconds($lastRefresh) < 30 * 60) {
+            $retryAfter = (30 * 60) - now()->diffInSeconds($lastRefresh);
+
             return response()->json([
                 'success' => false,
-                'message' => 'No locations found in database'
-            ], 404);
+                'message' => 'Weather reports can be refreshed once every 30 minutes.',
+                'retry_after' => $retryAfter,
+            ], 429);
         }
 
-        // Step 3: Fetch and store fresh data for all locations
-        $successCount = 0;
-        $failCount = 0;
-        $errors = [];
+        $result = $this->retrieveForecasts();
 
-        foreach ($locations as $location) {
-            try {
-                // Fetch forecast data
-                $forecastData = $this->fetchForecastData($location->latitude, $location->longitude);
-                
-                if (!$forecastData) {
-                    $failCount++;
-                    $errors[] = "Failed to fetch forecast for {$location->name}";
-                    continue;
-                }
-
-                // Store the forecast
-                $this->storeForecastForLocation($location, $forecastData);
-                $successCount++;
-                
-            } catch (\Exception $e) {
-                $failCount++;
-                $errors[] = "{$location->name}: {$e->getMessage()}";
-                \Log::error("Forecast storage error for location {$location->locID}", [
-                    'location' => $location->name,
-                    'error' => $e->getMessage()
-                ]);
-            }
+        if ($result['successful'] === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to retrieve fresh weather data. Existing reports were kept.',
+                'details' => $result,
+            ], 502);
         }
 
-        $message = "Data refresh complete!";
-        
-        if ($failCount > 0) {
-            $message .= " ({$failCount} locations failed)";
+        Cache::put($cooldownKey, now(), now()->addMinutes(30));
+
+        $message = 'Weather reports refreshed.';
+        if ($result['failed'] > 0) {
+            $message .= " ({$result['failed']} locations failed)";
         }
 
         return response()->json([
             'success' => true,
             'message' => $message,
-            'details' => [
-                'deleted_reports' => $deletedReports,
-                'deleted_snapshots' => $deletedSnapshots,
-                'total_locations' => $locations->count(),
-                'successful' => $successCount,
-                'failed' => $failCount,
-                'errors' => $errors
-            ]
+            'details' => $result,
         ]);
 
     } catch (\Exception $e) {
