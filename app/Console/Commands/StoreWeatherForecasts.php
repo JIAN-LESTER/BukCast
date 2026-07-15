@@ -7,6 +7,7 @@ use App\Models\WeatherReport;
 use App\Models\Snapshot;
 use App\Support\OpenWeatherClient;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Database\Seeders\BukidnonLocationsSeeder;
 
@@ -22,9 +23,15 @@ class StoreWeatherForecasts extends Command
         app(BukidnonLocationsSeeder::class)->run();
 
         if ($this->option('refresh')) {
-            // Snapshots are removed by the weather_reports foreign key cascade.
-            WeatherReport::query()->delete();
-            $this->info('Existing weather reports deleted.');
+            $deleted = DB::transaction(function () {
+                $snapshots = Snapshot::query()->delete();
+                $reports = WeatherReport::query()->delete();
+
+                return compact('snapshots', 'reports');
+            });
+
+            $this->info("Existing weather reports deleted: {$deleted['reports']}");
+            $this->info("Existing weather snapshots deleted: {$deleted['snapshots']}");
         }
         
         // Get all locations from database

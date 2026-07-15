@@ -401,12 +401,13 @@ class WeatherReportsController extends Controller
         $locationData = $todaySnapshots[$locID];
         
         if ($period && isset($locationData['periods'][$period])) {
-            $snapshot = $locationData['periods'][$period];
+            $periodSnapshot = $locationData['periods'][$period];
+
             return response()->json([
                 'location' => $locationData['location'],
                 'period' => $period,
-                'snapshot' => $snapshot,
-                'summary' => $snapshot ? $snapshot->getSummary() : null
+                'snapshot' => $periodSnapshot,
+                'summary' => $periodSnapshot['data'] ?? null
             ]);
         }
         
