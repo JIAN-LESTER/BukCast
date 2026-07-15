@@ -78,7 +78,7 @@
         </a>
         <p class="text-center text-sm mt-6">
             Already have an account? 
-            <a href="{{ route('loginForm') }}" class="text-blue-600 hover:underline dark:text-blue-400">Login</a>
+            <a href="{{ route('login') }}" class="text-blue-600 hover:underline dark:text-blue-400">Login</a>
         </p>
     </main>
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>

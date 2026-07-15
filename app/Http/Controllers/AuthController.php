@@ -46,7 +46,7 @@ public function register(Request $request)
 
     
 
-    return redirect()->route('loginForm')->with('success', 'Registration successful! You can log in now.');
+    return redirect()->route('login')->with('success', 'Registration successful! You can log in now.');
 }
 
     //  public function login(Request $request)

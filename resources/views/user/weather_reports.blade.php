@@ -195,6 +195,31 @@ $hasWeatherReports = isset($snapshots) && !$snapshots->isEmpty();
         </div>
     </div>
 </div>
+
+{{-- Confirmation modal --}}
+<div id="confirmModal" class="fixed inset-0 bg-black/40 backdrop-blur-[2px] hidden z-[60] flex items-center justify-center p-4">
+    <div class="w-full max-w-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+            <div class="flex items-center gap-2 text-sm font-bold text-gray-950 dark:text-white">
+                <i class="fas fa-circle-question text-blue-400"></i>
+                <span id="confirmModalTitle">Confirm action</span>
+            </div>
+        </div>
+        <div class="px-4 py-4">
+            <p id="confirmModalMessage" class="text-sm leading-relaxed text-gray-600 dark:text-gray-300"></p>
+        </div>
+        <div class="px-4 py-3 flex items-center justify-end gap-2 bg-gray-50 dark:bg-gray-700/50">
+            <button id="confirmModalCancel" type="button"
+                class="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                Cancel
+            </button>
+            <button id="confirmModalConfirm" type="button"
+                class="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-gray-900 dark:bg-gray-100 text-xs font-bold text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-300 transition-colors">
+                Continue
+            </button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('styles')
@@ -290,6 +315,64 @@ $hasWeatherReports = isset($snapshots) && !$snapshots->isEmpty();
         }, 5000);
     }
 
+    function confirmModal(options = {}) {
+        const modal = document.getElementById('confirmModal');
+        const title = document.getElementById('confirmModalTitle');
+        const message = document.getElementById('confirmModalMessage');
+        const cancelButton = document.getElementById('confirmModalCancel');
+        const confirmButton = document.getElementById('confirmModalConfirm');
+
+        title.textContent = options.title || 'Confirm action';
+        message.textContent = options.message || 'Do you want to continue?';
+        confirmButton.textContent = options.confirmText || 'Continue';
+        confirmButton.className = options.confirmClass || 'inline-flex items-center justify-center px-3 py-2 rounded-lg bg-gray-900 dark:bg-gray-100 text-xs font-bold text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-300 transition-colors';
+
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+
+        return new Promise(resolve => {
+            const finish = confirmed => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = document.getElementById('weatherModal').classList.contains('hidden') ? '' : 'hidden';
+                cancelButton.removeEventListener('click', onCancel);
+                confirmButton.removeEventListener('click', onConfirm);
+                modal.removeEventListener('click', onBackdrop);
+                resolve(confirmed);
+            };
+
+            const onCancel = () => finish(false);
+            const onConfirm = () => finish(true);
+            const onBackdrop = event => {
+                if (event.target === modal) finish(false);
+            };
+
+            cancelButton.addEventListener('click', onCancel);
+            confirmButton.addEventListener('click', onConfirm);
+            modal.addEventListener('click', onBackdrop);
+            confirmButton.focus();
+        });
+    }
+
+    async function readJsonResponse(response) {
+        let data;
+
+        try {
+            data = await response.json();
+        } catch (error) {
+            throw {
+                message: response.status === 419
+                    ? 'Your session expired. Please refresh the page and try again.'
+                    : 'The server returned an invalid response.'
+            };
+        }
+
+        if (!response.ok || data.success !== true) {
+            throw data;
+        }
+
+        return data;
+    }
+
     // ─── Search ───────────────────────────────────────────────────────────────────
     document.getElementById('locationSearch')?.addEventListener('input', function() {
         const q = this.value.toLowerCase().trim();
@@ -322,7 +405,15 @@ $hasWeatherReports = isset($snapshots) && !$snapshots->isEmpty();
     });
 
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeWeatherModal();
+        if (e.key !== 'Escape') return;
+
+        const confirm = document.getElementById('confirmModal');
+        if (confirm && !confirm.classList.contains('hidden')) {
+            document.getElementById('confirmModalCancel').click();
+            return;
+        }
+
+        closeWeatherModal();
     });
 
     // ─── Modal content builder ────────────────────────────────────────────────────
@@ -500,8 +591,14 @@ $hasWeatherReports = isset($snapshots) && !$snapshots->isEmpty();
     }
 
     // ─── Fetch Bukidnon weather ───────────────────────────────────────────────────
-    document.getElementById('storeNow')?.addEventListener('click', function() {
-        if (!confirm('Fetch Bukidnon weather forecasts for all locations right now?')) return;
+    document.getElementById('storeNow')?.addEventListener('click', async function() {
+        const confirmed = await confirmModal({
+            title: 'Fetch weather forecasts',
+            message: 'Fetch Bukidnon weather forecasts for all locations right now?',
+            confirmText: 'Fetch weather',
+        });
+
+        if (!confirmed) return;
 
         const btn = this;
         btn.disabled = true;
@@ -511,10 +608,11 @@ $hasWeatherReports = isset($snapshots) && !$snapshots->isEmpty();
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
                     'Content-Type': 'application/json',
                 },
             })
-            .then(r => r.json())
+            .then(readJsonResponse)
             .then(data => {
                 if (data.success) {
                     const d = data.details;
@@ -525,7 +623,7 @@ $hasWeatherReports = isset($snapshots) && !$snapshots->isEmpty();
                     showNotification('Failed to store: ' + data.message, 'error');
                 }
             })
-            .catch(() => showNotification('An error occurred while storing forecasts.', 'error'))
+            .catch(error => showNotification(error.message || 'An error occurred while storing forecasts.', 'error'))
             .finally(() => {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-cloud-download-alt text-xs"></i> Fetch weather in Bukidnon';
@@ -533,7 +631,15 @@ $hasWeatherReports = isset($snapshots) && !$snapshots->isEmpty();
     });
 
     // ─── Refresh ──────────────────────────────────────────────────────────────────
-    document.getElementById('refreshData')?.addEventListener('click', function() {
+    document.getElementById('refreshData')?.addEventListener('click', async function() {
+        const confirmed = await confirmModal({
+            title: 'Refresh weather reports',
+            message: 'Fetch fresh Bukidnon weather forecasts and update the current reports?',
+            confirmText: 'Refresh',
+        });
+
+        if (!confirmed) return;
+
         const btn = this;
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i> Refreshing…';
@@ -542,14 +648,11 @@ $hasWeatherReports = isset($snapshots) && !$snapshots->isEmpty();
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
                     'Content-Type': 'application/json',
                 },
             })
-            .then(async r => {
-                const data = await r.json().catch(() => ({ message: 'The server returned an invalid response.' }));
-                if (!r.ok || !data.success) throw data;
-                return data;
-            })
+            .then(readJsonResponse)
             .then(data => {
                 showNotification(data.message, 'success');
                 setTimeout(() => location.reload(), 2000);
@@ -562,8 +665,15 @@ $hasWeatherReports = isset($snapshots) && !$snapshots->isEmpty();
     });
 
     // ─── Cleanup (optional button — wire up if you have one in your layout) ───────
-    document.getElementById('cleanupOld')?.addEventListener('click', function() {
-        if (!confirm('Delete all weather reports from previous days?')) return;
+    document.getElementById('cleanupOld')?.addEventListener('click', async function() {
+        const confirmed = await confirmModal({
+            title: 'Delete old reports',
+            message: 'Delete all weather reports from previous days?',
+            confirmText: 'Delete',
+            confirmClass: 'inline-flex items-center justify-center px-3 py-2 rounded-lg bg-red-600 text-xs font-bold text-white hover:bg-red-700 transition-colors',
+        });
+
+        if (!confirmed) return;
 
         const btn = this;
         btn.disabled = true;
@@ -573,10 +683,11 @@ $hasWeatherReports = isset($snapshots) && !$snapshots->isEmpty();
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
                     'Content-Type': 'application/json',
                 },
             })
-            .then(r => r.json())
+            .then(readJsonResponse)
             .then(data => {
                 if (data.success) {
                     showNotification(data.message, 'success');
@@ -585,7 +696,7 @@ $hasWeatherReports = isset($snapshots) && !$snapshots->isEmpty();
                     showNotification('Cleanup failed: ' + data.message, 'error');
                 }
             })
-            .catch(() => showNotification('An error occurred during cleanup.', 'error'))
+            .catch(error => showNotification(error.message || 'An error occurred during cleanup.', 'error'))
             .finally(() => {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-trash-alt text-xs"></i> Cleanup old reports';

@@ -9,6 +9,12 @@
     use Illuminate\Support\Facades\Route;
     use App\Http\Controllers\MapsController;
 
+    Route::get('/login', [\App\Http\Controllers\AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login'])->name('login.submit');
+    Route::post('/logout', [\App\Http\Controllers\AuthController::class, 'logout'])->name('logout');
+    Route::get('/register', [\App\Http\Controllers\AuthController::class, 'showRegisterForm'])->name('registerForm');
+    Route::post('/register', [\App\Http\Controllers\AuthController::class, 'register'])->name('register');
+
     Route::get('/', [DashboardController::class, 'viewDashboard'])->name('home');
 
 
@@ -37,38 +43,32 @@
         Route::put('/profile/update', [ProfileController::class, 'updateProfile'])->name('profile.update');
     });
 
-    Route::middleware(['auth'])->group(function () {
-        // Main weather storage route (JSON-based for full day snapshots)
-        Route::post('/weather/store-full-day-snapshots', [WeatherController::class, 'storeFullDayForecastSnapshots'])
-            ->name('weather.store-full-day-snapshots');
-        
-        // Single time period storage (for "Save Current Time" functionality)
-        Route::post('/weather/store-current-snapshot', [WeatherController::class, 'storeCurrentTimeSnapshot'])
-            ->name('weather.store-current-snapshot');
-        
-        // Data retrieval routes
-        Route::get('/weather/todays-snapshots', [WeatherController::class, 'getTodaysWeatherSnapshots'])
-            ->name('weather.todays-snapshots');
-        
-        Route::get('/weather/location-history/{locID}', [WeatherController::class, 'getLocationWeatherHistory'])
-            ->name('weather.location-history');
-    });
+    // Main weather storage route (JSON-based for full day snapshots)
+    Route::post('/weather/store-full-day-snapshots', [WeatherController::class, 'storeFullDayForecastSnapshots'])
+        ->name('weather.store-full-day-snapshots');
+    
+    // Single time period storage (for "Save Current Time" functionality)
+    Route::post('/weather/store-current-snapshot', [WeatherController::class, 'storeCurrentTimeSnapshot'])
+        ->name('weather.store-current-snapshot');
+    
+    // Data retrieval routes
+    Route::get('/weather/todays-snapshots', [WeatherController::class, 'getTodaysWeatherSnapshots'])
+        ->name('weather.todays-snapshots');
+    
+    Route::get('/weather/location-history/{locID}', [WeatherController::class, 'getLocationWeatherHistory'])
+        ->name('weather.location-history');
 
-   
-
-    Route::middleware(['auth'])->group(function () {
-        // Store forecasts NOW (instant storage)
-        Route::post('/weather-reports/store-now', [WeatherReportsController::class, 'storeNow'])
-            ->name('weather_reports.store_now');
-        
-        // Manual cleanup endpoint
-        Route::post('/weather-reports/cleanup', [WeatherReportsController::class, 'triggerCleanup'])
-            ->name('weather_reports.cleanup');
-        
-        // Delete specific snapshot
-        Route::delete('/weather-reports/snapshots/{snapshotID}', [WeatherReportsController::class, 'deleteSnapshot'])
-            ->name('weather_reports.delete_snapshot');
-    });
+    // Store forecasts NOW (instant storage)
+    Route::post('/weather-reports/store-now', [WeatherReportsController::class, 'storeNow'])
+        ->name('weather_reports.store_now');
+    
+    // Manual cleanup endpoint
+    Route::post('/weather-reports/cleanup', [WeatherReportsController::class, 'triggerCleanup'])
+        ->name('weather_reports.cleanup');
+    
+    // Delete specific snapshot
+    Route::delete('/weather-reports/snapshots/{snapshotID}', [WeatherReportsController::class, 'deleteSnapshot'])
+        ->name('weather_reports.delete_snapshot');
 
     // API endpoints for real-time data
     Route::prefix('api/weather')->group(function () {
